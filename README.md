@@ -12,7 +12,7 @@
 2. 将此仓库克隆到ComfyUI的`custom_nodes`目录下：
 ```bash
 cd ComfyUI/custom_nodes
-git clone https://github.com/LAOGOU-666/Comfyui_NakuNodes.git
+git clone https://github.com/naku-yh/Comfyui_NakuNode
 ```
 
 3. 安装依赖：
@@ -23,7 +23,7 @@ pip install -r requirements.txt
 ## 使用方法
 
 1. 启动ComfyUI
-2. 在右键添加节点中，您可以在"NakuNodes"类别下找到所有工具节点
+2. 在右键添加节点中，您可以在"NakuNode"类别下找到所有工具节点
 3. 将需要的节点拖入工作区并连接使用
 
 ## 节点说明
