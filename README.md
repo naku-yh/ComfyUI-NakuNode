@@ -95,7 +95,7 @@
 
   版本信息
 
-  NakuNodes V1.3.7 --- 基于 Qwen 制作的高效节点工具
+  NakuNode V2.0.0 ---  NakuNode is build by Naku. It can make your work more easier.
 
   许可证
 

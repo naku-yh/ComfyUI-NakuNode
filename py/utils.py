@@ -2,7 +2,7 @@ from .md import *
 import os
 import json
 import datetime
-from PIL import Image, ImageDraw
+from PIL import Image, ImageOps, ImageDraw, ImageFont
 import numpy as np
 import torch
 import folder_paths
@@ -276,14 +276,105 @@ class Outline_NakuNodes:
         return (self.pil_to_tensor(result_image),)
 
 
+class NAKUSmartAnnotation_NakuNodes:
+    @classmethod
+    def INPUT_TYPES(s):
+        input_dir = folder_paths.get_input_directory()
+        files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
+
+        return {
+            "required": {
+                "image": (sorted(files), {"image_upload": True}),
+                "标注颜色": (["红色", "蓝色", "黄色", "白色", "黑色"], {"default": "红色"}),
+            },
+            "hidden": {
+                "points_data": ("STRING", {"default": "[]"}),
+            },
+        }
+
+    RETURN_TYPES = ("COORDINATES", "IMAGE")
+    RETURN_NAMES = ("points", "image")
+    FUNCTION = "process_image"
+    CATEGORY = "NakuNodes/Utils"
+
+    def process_image(self, image, 标注颜色="红色", points_data=None):
+        if points_data is None:
+            points_data = "[]"
+
+        # 1. 加载图片
+        image_path = folder_paths.get_annotated_filepath(image)
+        try:
+            i = Image.open(image_path)
+        except Exception as e:
+            print(f"Error loading image: {e}")
+            return ([], torch.zeros((1, 512, 512, 3)))
+
+        i = ImageOps.exif_transpose(i)
+        image_obj = i.convert("RGB")
+        w, h = image_obj.size
+
+        # 2. 解析坐标
+        try:
+            points = json.loads(points_data)
+        except:
+            points = []
+
+        # 3. 绘制
+        if points:
+            draw = ImageDraw.Draw(image_obj)
+            try:
+                # 字体大小 65 (24 * 1.8 * 1.5 = 64.8，约等于65，增加了170%)
+                font = ImageFont.truetype("arial.ttf", 65)
+            except:
+                font = ImageFont.load_default()
+
+            # 定义颜色映射
+            color_map = {
+                "红色": "#FF0000",
+                "蓝色": "#0000FF",
+                "黄色": "#FFFF00",
+                "白色": "#FFFFFF",
+                "黑色": "#000000"
+            }
+            fill_color = color_map.get(标注颜色, "#FF0000")  # 默认红色
+
+            for idx, p in enumerate(points):
+                cx = p['x'] * w
+                cy = p['y'] * h
+
+                # 半径 30 (比原来的20增大50%)
+                r = 30
+                draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=fill_color, outline="#FFFFFF", width=3)
+
+                # 绘制数字
+                label = str(idx + 1)
+                try:
+                    left, top, right, bottom = draw.textbbox((0, 0), label, font=font)
+                    tw, th = right - left, bottom - top
+                    text_x = cx - tw / 2
+                    text_y = cy - th / 2 - 3
+                except:
+                    tw, th = 54, 54  # 20 * 1.8 * 1.5 = 54
+                    text_x = cx - 27  # 10 * 1.8 * 1.5 = 27
+                    text_y = cy - 27  # 10 * 1.8 * 1.5 = 27
+
+                draw.text((text_x, text_y), label, fill="#FFFFFF", font=font)
+
+        # 4. 输出
+        image_np = np.array(image_obj).astype(np.float32) / 255.0
+        image_tensor = torch.from_numpy(image_np)[None,]
+
+        return (points, image_tensor)
+
+
 NODE_CLASS_MAPPINGS = {
-    "SaveImage_NakuNodes": SaveImage_NakuNodes,
     "QWEN常用尺寸_NakuNodes": QWEN常用尺寸_NakuNodes,
     "Outline_NakuNodes": Outline_NakuNodes,
+    "NAKUSmartAnnotation_NakuNodes": NAKUSmartAnnotation_NakuNodes,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "SaveImage_NakuNodes": "SaveImage_NakuNodes",
     "QWEN常用尺寸_NakuNodes": "QWEN常用尺寸_NakuNodes",
     "Outline_NakuNodes": "Outline_NakuNodes",
+    "NAKUSmartAnnotation_NakuNodes": "NAKU 智能标注",
 }

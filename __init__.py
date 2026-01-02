@@ -5,7 +5,7 @@ import sys
 import json
 
 # Print version information when loading
-print("NakuNodes V1.3.7 --- 基于 Qwen 制作的高效节点工具")
+print("\033[92mNakuNode V2.0.0\033[0m \033[93m---\033[0m \033[1;37mNakuNode is build by Naku.\033[0m It can make your work more easier.")
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
