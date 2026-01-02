@@ -36,14 +36,21 @@ for file in files:
     if not file.endswith(".py"):
         continue
     name = os.path.splitext(file)[0]
-    imported_module = importlib.import_module(".py.{}".format(name), __name__)
     try:
-        NODE_CLASS_MAPPINGS = {**NODE_CLASS_MAPPINGS, **imported_module.NODE_CLASS_MAPPINGS}
-        NODE_DISPLAY_NAME_MAPPINGS = {**NODE_DISPLAY_NAME_MAPPINGS, **imported_module.NODE_DISPLAY_NAME_MAPPINGS}
-        serialized_CLASS_MAPPINGS = {k: serialize(v) for k, v in imported_module.NODE_CLASS_MAPPINGS.items()}
-        serialized_DISPLAY_NAME_MAPPINGS = {k: serialize(v) for k, v in imported_module.NODE_DISPLAY_NAME_MAPPINGS.items()}
-        all_nodes[file]={"NODE_CLASS_MAPPINGS": serialized_CLASS_MAPPINGS, "NODE_DISPLAY_NAME_MAPPINGS": serialized_DISPLAY_NAME_MAPPINGS}
-    except:
+        imported_module = importlib.import_module(".py.{}".format(name), __name__)
+        if hasattr(imported_module, 'NODE_CLASS_MAPPINGS'):
+            NODE_CLASS_MAPPINGS = {**NODE_CLASS_MAPPINGS, **imported_module.NODE_CLASS_MAPPINGS}
+        if hasattr(imported_module, 'NODE_DISPLAY_NAME_MAPPINGS'):
+            NODE_DISPLAY_NAME_MAPPINGS = {**NODE_DISPLAY_NAME_MAPPINGS, **imported_module.NODE_DISPLAY_NAME_MAPPINGS}
+        if imported_module and hasattr(imported_module, 'NODE_CLASS_MAPPINGS') and hasattr(imported_module, 'NODE_DISPLAY_NAME_MAPPINGS'):
+            serialized_CLASS_MAPPINGS = {k: serialize(v) for k, v in imported_module.NODE_CLASS_MAPPINGS.items()}
+            serialized_DISPLAY_NAME_MAPPINGS = {k: serialize(v) for k, v in imported_module.NODE_DISPLAY_NAME_MAPPINGS.items()}
+            all_nodes[file]={"NODE_CLASS_MAPPINGS": serialized_CLASS_MAPPINGS, "NODE_DISPLAY_NAME_MAPPINGS": serialized_DISPLAY_NAME_MAPPINGS}
+    except ImportError as e:
+        print(f"Error importing module {name}: {e}")
+        pass
+    except Exception as e:
+        print(f"Unexpected error loading module {name}: {e}")
         pass
 
 

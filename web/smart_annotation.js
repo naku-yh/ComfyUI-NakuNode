@@ -197,7 +197,7 @@ app.registerExtension({
             ctx.save();
             ctx.translate(layout.imgX, layout.imgY);
 
-            ctx.font = "bold 38px Arial";  // 增加170% (14 * 1.8 * 1.5 = 37.8，约等于38)
+            ctx.font = "bold 27px Arial";  // 缩小30% (38 * 0.7 = 26.6，约等于27)
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
 
@@ -236,6 +236,7 @@ app.registerExtension({
 
                 ctx.shadowBlur = 0;
                 ctx.fillStyle = (i === this.hoverPointIndex) ? "black" : "white";
+                // 在圆内居中文字
                 ctx.fillText(i + 1, cx, cy);
             }
             ctx.restore();

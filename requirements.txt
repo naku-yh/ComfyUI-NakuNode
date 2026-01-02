@@ -1,2 +1,5 @@
 opencv-contrib-python
 transparent-background
+Pillow
+torch
+numpy

@@ -323,10 +323,22 @@ class NAKUSmartAnnotation_NakuNodes:
         if points:
             draw = ImageDraw.Draw(image_obj)
             try:
-                # 字体大小 65 (24 * 1.8 * 1.5 = 64.8，约等于65，增加了170%)
-                font = ImageFont.truetype("arial.ttf", 65)
+                # 字体大小 46 (65 * 0.7 = 45.5，约等于46，缩小30%)
+                font = ImageFont.truetype("arial.ttf", 46)
             except:
-                font = ImageFont.load_default()
+                # 如果无法加载特定字体，尝试其他常见字体
+                try:
+                    font = ImageFont.truetype("Arial.ttf", 46)
+                except:
+                    try:
+                        font = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", 46)  # macOS
+                    except:
+                        try:
+                            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 46)  # Linux
+                        except:
+                            # 如果所有字体都失败，使用默认字体并调整大小
+                            font = ImageFont.load_default()
+                            # 注意：当使用默认字体时，大小无法调整
 
             # 定义颜色映射
             color_map = {
@@ -351,12 +363,14 @@ class NAKUSmartAnnotation_NakuNodes:
                 try:
                     left, top, right, bottom = draw.textbbox((0, 0), label, font=font)
                     tw, th = right - left, bottom - top
+                    # 在圆内居中文字
                     text_x = cx - tw / 2
-                    text_y = cy - th / 2 - 3
+                    text_y = cy - th / 2
                 except:
-                    tw, th = 54, 54  # 20 * 1.8 * 1.5 = 54
-                    text_x = cx - 27  # 10 * 1.8 * 1.5 = 27
-                    text_y = cy - 27  # 10 * 1.8 * 1.5 = 27
+                    # 当使用默认字体时，尺寸可能无法准确计算，使用预估值
+                    tw, th = 38, 38  # 54 * 0.7 = 37.8，约等于38
+                    text_x = cx - 19  # 27 * 0.7 = 18.9，约等于19
+                    text_y = cy - 19  # 27 * 0.7 = 18.9，约等于19
 
                 draw.text((text_x, text_y), label, fill="#FFFFFF", font=font)
 
