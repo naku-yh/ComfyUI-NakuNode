@@ -156,11 +156,6 @@ class QWEN常用尺寸_NakuNodes:
         return (width, height)
 
 
-NODE_CLASS_MAPPINGS = {
-    "SaveImage_NakuNodes": SaveImage_NakuNodes,
-    "QWEN常用尺寸_NakuNodes": QWEN常用尺寸_NakuNodes,
-}
-
 class Outline_NakuNodes:
     """
     Outline 节点 (V1.0)
@@ -380,15 +375,105 @@ class NAKUSmartAnnotation_NakuNodes:
 
         return (points, image_tensor)
 
+class NAKUFileManagementNode:
+    """
+    A ComfyUI node for managing files in a directory.
+    Allows batch renaming of images with custom prefix and starting number.
+    """
 
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "input_folder": ("STRING", {"default": "", "multiline": False, "placeholder": "输入文件夹路径"}),
+                "output_folder": ("STRING", {"default": "", "multiline": False, "placeholder": "输出文件夹路径"}),
+                "file_prefix": ("STRING", {"default": "image", "multiline": False, "placeholder": "文件名前缀"}),
+                "start_number": ("INT", {"default": 1, "min": 1, "max": 999999, "display": "number"}),
+                "file_extension": (["auto", "png", "jpg", "jpeg", "gif", "bmp", "tiff", "webp"], {"default": "auto"}),
+            },
+        }
+
+    RETURN_TYPES = ("STRING", "STRING")
+    RETURN_NAMES = ("输出信息", "输出文件夹")
+    FUNCTION = "process_files"
+    CATEGORY = "NakuNodes/Utils"
+
+    def process_files(self, input_folder, output_folder, file_prefix, start_number, file_extension):
+        import os
+        import shutil
+        from pathlib import Path
+        import re
+
+        # Validate input folder
+        if not input_folder or not os.path.isdir(input_folder):
+            return (f"Error: 输入文件夹 '{input_folder}' 不存在", "")
+
+        # Validate or create output folder
+        if not output_folder:
+            output_folder = input_folder  # Use input folder as output if not specified
+        else:
+            os.makedirs(output_folder, exist_ok=True)
+
+        # Get all image files from input folder
+        image_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp'}
+        image_files = []
+
+        for file in os.listdir(input_folder):
+            file_path = os.path.join(input_folder, file)
+            if os.path.isfile(file_path):
+                file_ext = os.path.splitext(file)[1].lower()
+                if file_ext in image_extensions:
+                    image_files.append(file)
+
+        # Sort files to ensure consistent renaming
+        image_files.sort()
+
+        # Copy and rename files
+        renamed_files = []
+        current_number = start_number
+
+        for file in image_files:
+            old_path = os.path.join(input_folder, file)
+            original_ext = os.path.splitext(file)[1]
+
+            # Determine the extension to use
+            if file_extension == "auto":
+                # Use the original file extension
+                final_ext = original_ext
+            else:
+                # Use the specified extension
+                final_ext = f".{file_extension}"
+
+            new_filename = f"{file_prefix}_{current_number:04d}{final_ext}"
+            new_path = os.path.join(output_folder, new_filename)
+
+            # Copy file to output folder with new name
+            shutil.copy2(old_path, new_path)
+            renamed_files.append(new_filename)
+            current_number += 1
+
+        # Prepare output info
+        info = f"已处理 {len(renamed_files)} 个文件从 '{input_folder}' 到 '{output_folder}'. "
+        info += f"文件使用前缀 '{file_prefix}' 从编号 {start_number} 开始重命名。"
+
+        return (info, output_folder)
+
+
+# 合并所有节点映射
 NODE_CLASS_MAPPINGS = {
+    "SaveImage_NakuNodes": SaveImage_NakuNodes,
     "QWEN常用尺寸_NakuNodes": QWEN常用尺寸_NakuNodes,
     "Outline_NakuNodes": Outline_NakuNodes,
     "NAKUSmartAnnotation_NakuNodes": NAKUSmartAnnotation_NakuNodes,
+    "NAKUFileManagementNode": NAKUFileManagementNode,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "QWEN常用尺寸_NakuNodes": "QWEN常用尺寸_NakuNodes",
     "Outline_NakuNodes": "Outline_NakuNodes",
     "NAKUSmartAnnotation_NakuNodes": "NAKU 智能标注",
+    "NAKUFileManagementNode": "NAKU 文件管理系统",
 }
