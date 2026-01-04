@@ -77,6 +77,11 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 - 快速统一修改文件名
 - 方便使用NAKU高效打标系统进行LORA训练的前置打标
 
+### 6. API节点
+- 基于Comfly重新编译的API节点
+- 除了使用Comfly的api地址外，使用“IP”即可填写任意API节点
+
+
 ## 安装
 
 1. 将此项目克隆或下载到您的 ComfyUI 的 `custom_nodes` 目录中
@@ -88,4 +93,4 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 
 ## 版本信息
 
-**NakuNode V2.0.0** ---  NakuNode is build by Naku. It can make your work more easier.
+**NakuNode V2.0.2** ---  NakuNode is build by Naku. It can make your work more easier.

@@ -5,7 +5,7 @@ import sys
 import json
 
 # Print version information when loading
-print("\033[92mNakuNode V2.0.0\033[0m \033[93m---\033[0m \033[1;37mNakuNode is build by Naku.\033[0m It can make your work more easier.")
+print("\033[92mNakuNode V2.0.2\033[0m \033[93m---\033[0m \033[1;37mNakuNode is build by Naku.\033[0m It can make your work more easier.")
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
@@ -52,6 +52,24 @@ for file in files:
     except Exception as e:
         print(f"Unexpected error loading module {name}: {e}")
         pass
+
+# Load API nodes
+try:
+    imported_module = importlib.import_module(".py.Naku_API", __name__)
+    if hasattr(imported_module, 'NODE_CLASS_MAPPINGS'):
+        NODE_CLASS_MAPPINGS = {**NODE_CLASS_MAPPINGS, **imported_module.NODE_CLASS_MAPPINGS}
+    if hasattr(imported_module, 'NODE_DISPLAY_NAME_MAPPINGS'):
+        NODE_DISPLAY_NAME_MAPPINGS = {**NODE_DISPLAY_NAME_MAPPINGS, **imported_module.NODE_DISPLAY_NAME_MAPPINGS}
+    if imported_module and hasattr(imported_module, 'NODE_CLASS_MAPPINGS') and hasattr(imported_module, 'NODE_DISPLAY_NAME_MAPPINGS'):
+        serialized_CLASS_MAPPINGS = {k: serialize(v) for k, v in imported_module.NODE_CLASS_MAPPINGS.items()}
+        serialized_DISPLAY_NAME_MAPPINGS = {k: serialize(v) for k, v in imported_module.NODE_DISPLAY_NAME_MAPPINGS.items()}
+        all_nodes["Naku_API"]={"NODE_CLASS_MAPPINGS": serialized_CLASS_MAPPINGS, "NODE_DISPLAY_NAME_MAPPINGS": serialized_DISPLAY_NAME_MAPPINGS}
+except ImportError as e:
+    print(f"Error importing API module: {e}")
+    pass
+except Exception as e:
+    print(f"Unexpected error loading API module: {e}")
+    pass
 
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
