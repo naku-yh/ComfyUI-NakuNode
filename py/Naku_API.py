@@ -141,7 +141,7 @@ class NakuNodeAPI_Googel_Veo3:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING")
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "response")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -320,9 +320,8 @@ class NakuNodeAPI_Googel_Veo3:
                     "enable_upsample": enable_upsample if model in ["veo3", "veo3-fast", "veo3-pro"] else False,
                     "video_url": video_url,
                     "images_count": len([img for img in [image1, image2, image3] if img is not None])
-                }
-
-                return (video_url, video_url, json.dumps(response_data))
+                video_adapter = ComflyVideoAdapter(video_url)
+                return (video_adapter, video_url, json.dumps(response_data))
 
         except Exception as e:
             error_message = f"Error generating video: {str(e)}"
@@ -1330,7 +1329,7 @@ class NakuNodeAPI_kling_text2video:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING")
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "task_id", "video_id", "response")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -1482,7 +1481,8 @@ class NakuNodeAPI_kling_text2video:
                         "video_url": video_url
                     }
 
-                    return (video_url, video_url, task_id, video_id, json.dumps(response_data))
+                    video_adapter = ComflyVideoAdapter(video_url)
+                    return (video_adapter, video_url, task_id, video_id, json.dumps(response_data))
 
                 elif status_result["data"]["task_status"] == "failed":
                     error_msg = status_result["data"].get("task_status_msg", "Unknown error")
@@ -1524,7 +1524,7 @@ class NakuNodeAPI_kling_image2video:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING")
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "task_id", "video_id", "response")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -1707,7 +1707,8 @@ class NakuNodeAPI_kling_image2video:
                         "video_url": video_url
                     }
 
-                    return (video_url, video_url, task_id, video_id, json.dumps(response_data))
+                    video_adapter = ComflyVideoAdapter(video_url)
+                    return (video_adapter, video_url, task_id, video_id, json.dumps(response_data))
 
                 elif status_result["data"]["task_status"] == "failed":
                     error_msg = status_result["data"].get("task_status_msg", "Unknown error")
@@ -1763,7 +1764,7 @@ class NakuNodeAPI_kling_multi_image2video:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING")
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "task_id", "video_id", "response")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -2047,7 +2048,7 @@ class NakuNodeAPI_video_extend:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING")
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_id", "response")
     FUNCTION = "extend_video"
     CATEGORY = CATEGORY_TYPE
@@ -2229,7 +2230,7 @@ class NakuNodeAPI_lip_sync:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "task_id", "response")
     FUNCTION = "process_lip_sync"
     CATEGORY = CATEGORY_TYPE
@@ -2321,7 +2322,8 @@ class NakuNodeAPI_lip_sync:
                         "video_url": video_url
                     }
 
-                    return (video_url, video_url, task_id, json.dumps(response_data))
+                    video_adapter = ComflyVideoAdapter(video_url)
+                    return (video_adapter, video_url, task_id, json.dumps(response_data))
 
                 elif status_result["data"]["task_status"] == "failed":
                     error_msg = status_result["data"].get("task_status_msg", "Unknown error")
@@ -3162,7 +3164,7 @@ class NakuNodeAPI_mj_video(NakuNodeAPIBaseNode):
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING")
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "message")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -3215,7 +3217,8 @@ class NakuNodeAPI_mj_video(NakuNodeAPIBaseNode):
                     # Wait for video generation to complete
                     video_url = self.wait_for_video_completion(task_id)
                     if video_url:
-                        return (video_url, video_url, f"Video generated successfully. Task ID: {task_id}")
+                        video_adapter = ComflyVideoAdapter(video_url)
+                        return (video_adapter, video_url, f"Video generated successfully. Task ID: {task_id}")
                     else:
                         return ("", "", f"Failed to get video URL for task: {task_id}")
                 else:
@@ -3325,7 +3328,7 @@ class NakuNodeAPI_mj_video_extend(NakuNodeAPIBaseNode):
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING")
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "message")
     FUNCTION = "extend_video"
     CATEGORY = CATEGORY_TYPE
@@ -3365,7 +3368,8 @@ class NakuNodeAPI_mj_video_extend(NakuNodeAPIBaseNode):
                     # Wait for video extension to complete
                     video_url = self.wait_for_video_completion(new_task_id)
                     if video_url:
-                        return (video_url, video_url, f"Video extended successfully. New Task ID: {new_task_id}")
+                        video_adapter = ComflyVideoAdapter(video_url)
+                        return (video_adapter, video_url, f"Video extended successfully. New Task ID: {new_task_id}")
                     else:
                         return ("", "", f"Failed to get extended video URL for task: {new_task_id}")
                 else:
@@ -3887,7 +3891,7 @@ class NakuNodeAPI_sora2:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING")
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "response")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -3993,7 +3997,8 @@ class NakuNodeAPI_sora2:
                                 "quality": quality
                             }
 
-                            return (video_url, video_url, json.dumps(response_data))
+                            video_adapter = ComflyVideoAdapter(video_url)
+                            return (video_adapter, video_url, json.dumps(response_data))
                     elif status == "failed":
                         error_message = status_result.get("error_message", "Unknown error")
                         return ("", "", json.dumps({"status": "error", "message": f"Video generation failed: {error_message}"}))
@@ -4033,7 +4038,7 @@ class NakuNodeAPI_sora2_character:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING")
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "response")
     FUNCTION = "generate_character_video"
     CATEGORY = CATEGORY_TYPE
@@ -4144,7 +4149,8 @@ class NakuNodeAPI_sora2_character:
                                 "quality": quality
                             }
 
-                            return (video_url, video_url, json.dumps(response_data))
+                            video_adapter = ComflyVideoAdapter(video_url)
+                            return (video_adapter, video_url, json.dumps(response_data))
                     elif status == "failed":
                         error_message = status_result.get("error_message", "Unknown error")
                         return ("", "", json.dumps({"status": "error", "message": f"Character video generation failed: {error_message}"}))
@@ -4269,7 +4275,7 @@ class NakuNodeAPI_vidu_img2video:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "task_id", "response")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -4460,7 +4466,8 @@ class NakuNodeAPI_vidu_img2video:
             }
 
             pbar.update_absolute(100)
-            return (video_url, video_url, task_id, json.dumps(response_data))
+            video_adapter = ComflyVideoAdapter(video_url)
+            return (video_adapter, video_url, task_id, json.dumps(response_data))
             
         except Exception as e:
             error_message = f"Error generating video: {str(e)}"
@@ -4498,7 +4505,7 @@ class NakuNodeAPI_vidu_text2video:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "task_id", "response")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -4648,7 +4655,8 @@ class NakuNodeAPI_vidu_text2video:
             }
 
             pbar.update_absolute(100)
-            return (video_url, video_url, task_id, json.dumps(response_data))
+            video_adapter = ComflyVideoAdapter(video_url)
+            return (video_adapter, video_url, task_id, json.dumps(response_data))
             
         except Exception as e:
             error_message = f"Error generating video: {str(e)}"
@@ -4707,7 +4715,7 @@ class NakuNodeAPI_vidu_ref2video:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "task_id", "response")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -4931,7 +4939,8 @@ class NakuNodeAPI_vidu_ref2video:
             }
 
             pbar.update_absolute(100)
-            return (video_url, video_url, task_id, json.dumps(response_data))
+            video_adapter = ComflyVideoAdapter(video_url)
+            return (video_adapter, video_url, task_id, json.dumps(response_data))
             
         except Exception as e:
             error_message = f"Error generating video: {str(e)}"
@@ -4971,7 +4980,7 @@ class NakuNodeAPI_vidu_start_end2video:
             }
         }
 
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "task_id", "response")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -5158,7 +5167,8 @@ class NakuNodeAPI_vidu_start_end2video:
             }
 
             pbar.update_absolute(100)
-            return (video_url, video_url, task_id, json.dumps(response_data))
+            video_adapter = ComflyVideoAdapter(video_url)
+            return (video_adapter, video_url, task_id, json.dumps(response_data))
             
         except Exception as e:
             error_message = f"Error generating video: {str(e)}"
