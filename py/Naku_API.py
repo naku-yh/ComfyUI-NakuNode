@@ -113,6 +113,86 @@ def save_config(config):
 class ComflyVideoAdapter:
     def __init__(self, video_url):
         self.video_url = video_url
+        # Set default dimensions for video objects
+        self.width = 1920
+        self.height = 1080
+
+        # Initialize attributes that may be accessed by ComfyUI video nodes
+        self.images = None  # Will be populated when needed
+        self.audio = None   # Will be populated when needed
+        self.frame_rate = 30.0  # Default frame rate
+
+    def get_dimensions(self):
+        """Return video dimensions as (width, height) tuple"""
+        return (self.width, self.height)
+
+    def get_components(self):
+        """Return self to provide images, audio and frame_rate attributes directly"""
+        # Return self so that the ComflyVideoAdapter object itself provides the needed attributes
+        return self
+
+    def save_to(self, path, format=None, **kwargs):
+        """Download and save the video from the URL to the specified path"""
+        import requests
+        import os
+        from urllib.parse import urlparse
+        import mimetypes
+
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+
+        # Check if video_url is valid
+        if not self.video_url or not self.video_url.strip():
+            print(f"Warning: Attempting to save video with empty URL")
+            # Create an empty file to avoid breaking the workflow
+            with open(path, 'w') as f:
+                f.write("")
+            return path
+
+        try:
+            # Download the video from the URL
+            response = requests.get(self.video_url, stream=True)
+            response.raise_for_status()
+
+            # Determine file extension from URL or content-type header
+            if '?' in self.video_url:
+                # Remove query parameters
+                clean_url = self.video_url.split('?')[0]
+            else:
+                clean_url = self.video_url
+
+            # Get extension from URL
+            parsed_url = urlparse(clean_url)
+            ext = os.path.splitext(parsed_url.path)[1]
+
+            if not ext:
+                # Try to determine from content-type header
+                content_type = response.headers.get('content-type', '')
+                ext = mimetypes.guess_extension(content_type.split(';')[0]) or '.mp4'
+
+            # Use format parameter if provided, otherwise use detected extension
+            if format:
+                ext = f".{format.lower()}"
+
+            # Update path with correct extension if needed
+            if not path.endswith(ext):
+                base_path = os.path.splitext(path)[0]
+                path = f"{base_path}{ext}"
+
+            # Write the video content to the file
+            with open(path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+
+            return path
+
+        except Exception as e:
+            print(f"Error downloading video from {self.video_url}: {str(e)}")
+            # If download fails, create an empty file to avoid breaking the workflow
+            with open(path, 'w') as f:
+                f.write("")
+            return path
 
     def __str__(self):
         return f"ComflyVideoAdapter(video_url={self.video_url})"
@@ -320,6 +400,7 @@ class NakuNodeAPI_Googel_Veo3:
                     "enable_upsample": enable_upsample if model in ["veo3", "veo3-fast", "veo3-pro"] else False,
                     "video_url": video_url,
                     "images_count": len([img for img in [image1, image2, image3] if img is not None])
+                }
                 video_adapter = ComflyVideoAdapter(video_url)
                 return (video_adapter, video_url, json.dumps(response_data))
 
@@ -4314,7 +4395,7 @@ class NakuNodeAPI_vidu_img2video:
         buffered = BytesIO()
         pil_image.save(buffered, format="PNG")
         base64_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
-        return f"data:image/png;base64,{base64_str}"
+        return base64_str  # Return pure base64 string without data URI prefix
 
     def generate_video(self, image, prompt, model="viduq2-pro", api_key="",
                       audio=False, voice_language="中文(普通话)", voice_id="male-qn-jingying", 
@@ -4329,8 +4410,7 @@ class NakuNodeAPI_vidu_img2video:
             
         if not self.api_key:
             error_response = {"status": "error", "message": "API key not provided or not found in config"}
-            empty_video = ComflyVideoAdapter("")
-            return (empty_video, "", "", json.dumps(error_response))
+            return ("", "", "", json.dumps(error_response))
             
         try:
             pbar = comfy.utils.ProgressBar(100)
@@ -4340,8 +4420,7 @@ class NakuNodeAPI_vidu_img2video:
             if not image_base64:
                 error_message = "Failed to convert image to base64"
                 print(error_message)
-                empty_video = ComflyVideoAdapter("")
-                return (empty_video, "", "", json.dumps({"status": "error", "message": error_message}))
+                return ("", "", "", json.dumps({"status": "error", "message": error_message}))
 
             payload = {
                 "model": model,
@@ -4384,16 +4463,14 @@ class NakuNodeAPI_vidu_img2video:
             if response.status_code != 200:
                 error_message = f"API Error: {response.status_code} - {response.text}"
                 print(error_message)
-                empty_video = ComflyVideoAdapter("")
-                return (empty_video, "", "", json.dumps({"status": "error", "message": error_message}))
+                return ("", "", "", json.dumps({"status": "error", "message": error_message}))
                 
             result = response.json()
             
             if "task_id" not in result:
                 error_message = f"No task_id in response: {result}"
                 print(error_message)
-                empty_video = ComflyVideoAdapter("")
-                return (empty_video, "", "", json.dumps({"status": "error", "message": error_message}))
+                return ("", "", "", json.dumps({"status": "error", "message": error_message}))
                 
             task_id = result.get("task_id")
             
@@ -4436,8 +4513,7 @@ class NakuNodeAPI_vidu_img2video:
                         err_code = status_result.get("err_code", "Unknown error")
                         error_message = f"Video generation failed: {err_code}"
                         print(error_message)
-                        empty_video = ComflyVideoAdapter("")
-                        return (empty_video, "", task_id, json.dumps({"status": "error", "message": error_message}))
+                        return ("", "", task_id, json.dumps({"status": "error", "message": error_message}))
                         
                 except Exception as e:
                     print(f"Error checking generation status (attempt {attempts}): {str(e)}")
@@ -4445,8 +4521,7 @@ class NakuNodeAPI_vidu_img2video:
             if not video_url:
                 error_message = f"Failed to retrieve video URL after {max_attempts} attempts"
                 print(error_message)
-                empty_video = ComflyVideoAdapter("")
-                return (empty_video, "", task_id, json.dumps({"status": "error", "message": error_message}))
+                return ("", "", task_id, json.dumps({"status": "error", "message": error_message}))
             
             pbar.update_absolute(95)
             print(f"Video generation completed. URL: {video_url}")
@@ -4474,8 +4549,7 @@ class NakuNodeAPI_vidu_img2video:
             print(error_message)
             import traceback
             traceback.print_exc()
-            empty_video = ComflyVideoAdapter("")
-            return (empty_video, "", "", json.dumps({"status": "error", "message": error_message}))
+            return ("", "", "", json.dumps({"status": "error", "message": error_message}))
 
 
 class NakuNodeAPI_vidu_text2video:
@@ -4532,8 +4606,7 @@ class NakuNodeAPI_vidu_text2video:
             
         if not self.api_key:
             error_response = {"status": "error", "message": "API key not provided or not found in config"}
-            empty_video = ComflyVideoAdapter("")
-            return (empty_video, "", "", json.dumps(error_response))
+            return ("", "", "", json.dumps(error_response))
             
         try:
             pbar = comfy.utils.ProgressBar(100)
@@ -4574,16 +4647,14 @@ class NakuNodeAPI_vidu_text2video:
             if response.status_code != 200:
                 error_message = f"API Error: {response.status_code} - {response.text}"
                 print(error_message)
-                empty_video = ComflyVideoAdapter("")
-                return (empty_video, "", "", json.dumps({"status": "error", "message": error_message}))
+                return ("", "", "", json.dumps({"status": "error", "message": error_message}))
                 
             result = response.json()
             
             if "task_id" not in result:
                 error_message = f"No task_id in response: {result}"
                 print(error_message)
-                empty_video = ComflyVideoAdapter("")
-                return (empty_video, "", "", json.dumps({"status": "error", "message": error_message}))
+                return ("", "", "", json.dumps({"status": "error", "message": error_message}))
                 
             task_id = result.get("task_id")
             
@@ -4626,8 +4697,7 @@ class NakuNodeAPI_vidu_text2video:
                         err_code = status_result.get("err_code", "Unknown error")
                         error_message = f"Video generation failed: {err_code}"
                         print(error_message)
-                        empty_video = ComflyVideoAdapter("")
-                        return (empty_video, "", task_id, json.dumps({"status": "error", "message": error_message}))
+                        return ("", "", task_id, json.dumps({"status": "error", "message": error_message}))
                         
                 except Exception as e:
                     print(f"Error checking generation status (attempt {attempts}): {str(e)}")
@@ -4635,8 +4705,7 @@ class NakuNodeAPI_vidu_text2video:
             if not video_url:
                 error_message = f"Failed to retrieve video URL after {max_attempts} attempts"
                 print(error_message)
-                empty_video = ComflyVideoAdapter("")
-                return (empty_video, "", task_id, json.dumps({"status": "error", "message": error_message}))
+                return ("", "", task_id, json.dumps({"status": "error", "message": error_message}))
             
             pbar.update_absolute(95)
             print(f"Video generation completed. URL: {video_url}")
@@ -4663,8 +4732,7 @@ class NakuNodeAPI_vidu_text2video:
             print(error_message)
             import traceback
             traceback.print_exc()
-            empty_video = ComflyVideoAdapter("")
-            return (empty_video, "", "", json.dumps({"status": "error", "message": error_message}))
+            return ("", "", "", json.dumps({"status": "error", "message": error_message}))
 
 
 class NakuNodeAPI_vidu_ref2video:
@@ -4754,7 +4822,7 @@ class NakuNodeAPI_vidu_ref2video:
         buffered = BytesIO()
         pil_image.save(buffered, format="PNG")
         base64_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
-        return f"data:image/png;base64,{base64_str}"
+        return base64_str  # Return pure base64 string without data URI prefix
     
     def generate_video(self, prompt, model="viduq2", api_key="",
                       image1=None, image2=None, image3=None, image4=None,
@@ -4773,8 +4841,7 @@ class NakuNodeAPI_vidu_ref2video:
             
         if not self.api_key:
             error_response = {"status": "error", "message": "API key not provided or not found in config"}
-            empty_video = ComflyVideoAdapter("")
-            return (empty_video, "", "", json.dumps(error_response))
+            return ("", "", "", json.dumps(error_response))
             
         try:
             pbar = comfy.utils.ProgressBar(100)
@@ -4792,8 +4859,7 @@ class NakuNodeAPI_vidu_ref2video:
             if not image_base64_list:
                 error_message = "No images provided. At least one image is required."
                 print(error_message)
-                empty_video = ComflyVideoAdapter("")
-                return (empty_video, "", "", json.dumps({"status": "error", "message": error_message}))
+                return ("", "", "", json.dumps({"status": "error", "message": error_message}))
 
             payload = {
                 "model": model,
@@ -4856,16 +4922,14 @@ class NakuNodeAPI_vidu_ref2video:
             if response.status_code != 200:
                 error_message = f"API Error: {response.status_code} - {response.text}"
                 print(error_message)
-                empty_video = ComflyVideoAdapter("")
-                return (empty_video, "", "", json.dumps({"status": "error", "message": error_message}))
+                return ("", "", "", json.dumps({"status": "error", "message": error_message}))
                 
             result = response.json()
             
             if "task_id" not in result:
                 error_message = f"No task_id in response: {result}"
                 print(error_message)
-                empty_video = ComflyVideoAdapter("")
-                return (empty_video, "", "", json.dumps({"status": "error", "message": error_message}))
+                return ("", "", "", json.dumps({"status": "error", "message": error_message}))
                 
             task_id = result.get("task_id")
             
@@ -4908,8 +4972,7 @@ class NakuNodeAPI_vidu_ref2video:
                         err_code = status_result.get("err_code", "Unknown error")
                         error_message = f"Video generation failed: {err_code}"
                         print(error_message)
-                        empty_video = ComflyVideoAdapter("")
-                        return (empty_video, "", task_id, json.dumps({"status": "error", "message": error_message}))
+                        return ("", "", task_id, json.dumps({"status": "error", "message": error_message}))
                         
                 except Exception as e:
                     print(f"Error checking generation status (attempt {attempts}): {str(e)}")
@@ -4917,8 +4980,7 @@ class NakuNodeAPI_vidu_ref2video:
             if not video_url:
                 error_message = f"Failed to retrieve video URL after {max_attempts} attempts"
                 print(error_message)
-                empty_video = ComflyVideoAdapter("")
-                return (empty_video, "", task_id, json.dumps({"status": "error", "message": error_message}))
+                return ("", "", task_id, json.dumps({"status": "error", "message": error_message}))
             
             pbar.update_absolute(95)
             print(f"Video generation completed. URL: {video_url}")
@@ -4947,8 +5009,240 @@ class NakuNodeAPI_vidu_ref2video:
             print(error_message)
             import traceback
             traceback.print_exc()
+            return ("", "", "", json.dumps({"status": "error", "message": error_message}))
+
+
+class NakuNodeAPI_kling_o1_video:
+    """
+    NakuNodeAPI Kling O1-Video node
+    Generates videos using Kling O1-Video API
+    """
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"multiline": True, "default": ""}),
+            },
+            "optional": {
+                "api_key": ("STRING", {"default": ""}),
+                "model_name": (["kling-video-o1"], {"default": "kling-video-o1"}),
+                "mode": (["pro"], {"default": "pro"}),
+                "aspect_ratio": (["16:9", "9:16", "1:1"], {"default": "16:9"}),
+                "duration": (["3", "4", "5", "6", "7", "8", "9", "10"], {"default": "5"}),
+                "image1": ("IMAGE",),
+                "image2": ("IMAGE",),
+                "image3": ("IMAGE",),
+                "image4": ("IMAGE",),
+                "image5": ("IMAGE",),
+                "image6": ("IMAGE",),
+                "image7": ("IMAGE",),
+            }
+        }
+
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "video_url", "response")
+    FUNCTION = "generate_video"
+    CATEGORY = CATEGORY_TYPE
+
+    def __init__(self):
+        self.api_key = get_config().get('api_key', '')
+        self.timeout = 600
+
+    def get_headers(self):
+        return {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+
+    def image_to_base64(self, image_tensor):
+        """Convert tensor to base64 string with data URI prefix"""
+        if image_tensor is None:
+            return None
+
+        pil_image = tensor2pil_naku(image_tensor)[0]
+
+        # Resize image if too large to prevent "request entity too large" error
+        # Maintain aspect ratio by resizing the longest side to 1920 pixels
+        max_dimension = 1920
+        original_width, original_height = pil_image.size
+
+        if original_width > max_dimension or original_height > max_dimension:
+            # Calculate the scaling factor to maintain aspect ratio
+            scale_factor = max_dimension / max(original_width, original_height)
+            new_width = int(original_width * scale_factor)
+            new_height = int(original_height * scale_factor)
+
+            # Resize the image using LANCZOS resampling for better quality
+            pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+        buffered = BytesIO()
+        pil_image.save(buffered, format="PNG")
+        base64_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        return base64_str  # Return pure base64 string without data URI prefix
+
+    def generate_video(self, prompt, api_key="", model_name="kling-video-o1", mode="pro",
+                      aspect_ratio="", duration="5", image1=None, image2=None, image3=None,
+                      image4=None, image5=None, image6=None, image7=None):
+
+        if api_key.strip():
+            self.api_key = api_key
+            config = get_config()
+            config['api_key'] = api_key
+
+        if not self.api_key:
+            error_response = {"status": "error", "message": "API key not provided or not found in config"}
+            return ("", "", json.dumps(error_response))
+
+        try:
+            pbar = comfy.utils.ProgressBar(100)
+            pbar.update_absolute(10)
+
+            # Convert image tensors to base64 if provided
+            image_base64_list = []
+            for img in [image1, image2, image3, image4, image5, image6, image7]:
+                if img is not None:
+                    img_base64 = self.image_to_base64(img)
+                    if img_base64:
+                        image_base64_list.append(img_base64)
+
+            payload = {
+                "model_name": model_name,
+                "prompt": prompt,
+                "mode": mode,
+                "duration": int(duration)
+            }
+
+            # Add optional parameters if provided
+            if aspect_ratio:
+                payload["aspect_ratio"] = aspect_ratio
+
+            # Add images if provided
+            if image_base64_list:
+                payload["image_list"] = [{"image_url": img_url} for img_url in image_base64_list]
+
+            pbar.update_absolute(30)
+
+            # Make API request
+            response = requests.post(
+                f"{get_baseurl()}/kling/v1/videos/omni-video",
+                headers=self.get_headers(),
+                json=payload,
+                timeout=self.timeout
+            )
+
+            pbar.update_absolute(40)
+
+            if response.status_code != 200:
+                error_message = f"API Error: {response.status_code} - {response.text}"
+                print(error_message)
+                return ("", "", json.dumps({"status": "error", "message": error_message}))
+
+            result = response.json()
+
+            # Check for success code
+            if result.get("code") != 0:
+                error_message = f"API Error: {result.get('message', 'Unknown error')}"
+                print(error_message)
+                return ("", "", json.dumps({"status": "error", "message": error_message}))
+
+            # Extract task_id from nested data structure
+            task_data = result.get("data", {})
+            task_id = task_data.get("task_id")
+
+            if not task_id:
+                error_message = f"No task_id in response data: {result}"
+                print(error_message)
+                return ("", "", json.dumps({"status": "error", "message": error_message}))
+            pbar.update_absolute(50)
+
+            # Poll for completion
+            max_attempts = 180  # 30 minutes with 10-second intervals
+            attempts = 0
+            video_url = None
+
+            while attempts < max_attempts:
+                time.sleep(10)
+                attempts += 1
+
+                try:
+                    status_response = requests.get(
+                        f"{get_baseurl()}/kling/v1/videos/omni-video/{task_id}",
+                        headers=self.get_headers(),
+                        timeout=self.timeout
+                    )
+
+                    if status_response.status_code != 200:
+                        print(f"Status check failed: {status_response.status_code} - {status_response.text}")
+                        continue
+
+                    status_result = status_response.json()
+
+                    # Check if the API call was successful
+                    if status_result.get("code") != 0:
+                        error_msg = status_result.get("message", "Unknown error")
+                        error_message = f"Status check API error: {error_msg}"
+                        print(error_message)
+                        return ("", "", json.dumps({"status": "error", "message": error_message}))
+
+                    # Extract status from nested data structure (based on actual API response)
+                    task_data = status_result.get("data", {})
+                    task_status = task_data.get("task_status", "")
+                    progress = task_data.get("progress", "0%")
+
+                    progress_value = min(90, 50 + (attempts * 40 // max_attempts))
+                    pbar.update_absolute(progress_value)
+
+                    if task_status == "success" or task_status == "succeed":
+                        # Extract video URL from response (based on actual API response structure)
+                        task_result = task_data.get("task_result", {})
+                        videos = task_result.get("videos", [])
+                        if videos and len(videos) > 0:
+                            video_url = videos[0].get("url", "")
+                            if video_url:
+                                print(f"Video URL found: {video_url}")
+                                break
+                    elif task_status == "failed":
+                        error_msg = task_data.get("error_message", task_data.get("task_status_msg", "Unknown error"))
+                        error_message = f"Video generation failed: {error_msg}"
+                        print(error_message)
+                        return ("", "", json.dumps({"status": "error", "message": error_message}))
+                    elif task_status == "processing" or task_status == "submitted":
+                        continue
+                    else:
+                        print(f"Unexpected status: {task_status}")
+
+                except Exception as e:
+                    print(f"Error checking generation status (attempt {attempts}): {str(e)}")
+                    continue
+
+            if not video_url:
+                error_message = f"Failed to retrieve video URL after {max_attempts} attempts"
+                print(error_message)
+                return ("", "", json.dumps({"status": "error", "message": error_message}))
+
+            pbar.update_absolute(100)
+
+            response_data = {
+                "status": "success",
+                "task_id": task_id,
+                "video_url": video_url,
+                "model": model_name,
+                "prompt": prompt,
+                "aspect_ratio": aspect_ratio,
+                "duration": duration,
+                "mode": mode
+            }
+
+            video_adapter = ComflyVideoAdapter(video_url)
+            return (video_adapter, video_url, json.dumps(response_data))
+
+        except Exception as e:
+            error_message = f"Error generating video: {str(e)}"
+            print(error_message)
+            import traceback
+            traceback.print_exc()
             empty_video = ComflyVideoAdapter("")
-            return (empty_video, "", "", json.dumps({"status": "error", "message": error_message}))
+            return (empty_video, "", json.dumps({"status": "error", "message": error_message}))
 
 
 class NakuNodeAPI_vidu_start_end2video:
@@ -5019,7 +5313,7 @@ class NakuNodeAPI_vidu_start_end2video:
         buffered = BytesIO()
         pil_image.save(buffered, format="PNG")
         base64_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
-        return f"data:image/png;base64,{base64_str}"
+        return base64_str  # Return pure base64 string without data URI prefix
     
     def generate_video(self, start_image, end_image, model="viduq2-pro", prompt="", api_key="", 
                       is_rec=False, duration=5, seed=0, resolution="720p", 
@@ -5033,8 +5327,7 @@ class NakuNodeAPI_vidu_start_end2video:
             
         if not self.api_key:
             error_response = {"status": "error", "message": "API key not provided or not found in config"}
-            empty_video = ComflyVideoAdapter("")
-            return (empty_video, "", "", json.dumps(error_response))
+            return ("", "", "", json.dumps(error_response))
             
         try:
             pbar = comfy.utils.ProgressBar(100)
@@ -5046,8 +5339,7 @@ class NakuNodeAPI_vidu_start_end2video:
             if not start_base64 or not end_base64:
                 error_message = "Failed to convert start or end image to base64"
                 print(error_message)
-                empty_video = ComflyVideoAdapter("")
-                return (empty_video, "", "", json.dumps({"status": "error", "message": error_message}))
+                return ("", "", "", json.dumps({"status": "error", "message": error_message}))
 
             payload = {
                 "model": model,
@@ -5087,16 +5379,14 @@ class NakuNodeAPI_vidu_start_end2video:
             if response.status_code != 200:
                 error_message = f"API Error: {response.status_code} - {response.text}"
                 print(error_message)
-                empty_video = ComflyVideoAdapter("")
-                return (empty_video, "", "", json.dumps({"status": "error", "message": error_message}))
+                return ("", "", "", json.dumps({"status": "error", "message": error_message}))
                 
             result = response.json()
             
             if "task_id" not in result:
                 error_message = f"No task_id in response: {result}"
                 print(error_message)
-                empty_video = ComflyVideoAdapter("")
-                return (empty_video, "", "", json.dumps({"status": "error", "message": error_message}))
+                return ("", "", "", json.dumps({"status": "error", "message": error_message}))
                 
             task_id = result.get("task_id")
             
@@ -5139,8 +5429,7 @@ class NakuNodeAPI_vidu_start_end2video:
                         err_code = status_result.get("err_code", "Unknown error")
                         error_message = f"Video generation failed: {err_code}"
                         print(error_message)
-                        empty_video = ComflyVideoAdapter("")
-                        return (empty_video, "", task_id, json.dumps({"status": "error", "message": error_message}))
+                        return ("", "", task_id, json.dumps({"status": "error", "message": error_message}))
                         
                 except Exception as e:
                     print(f"Error checking generation status (attempt {attempts}): {str(e)}")
@@ -5148,8 +5437,7 @@ class NakuNodeAPI_vidu_start_end2video:
             if not video_url:
                 error_message = f"Failed to retrieve video URL after {max_attempts} attempts"
                 print(error_message)
-                empty_video = ComflyVideoAdapter("")
-                return (empty_video, "", task_id, json.dumps({"status": "error", "message": error_message}))
+                return ("", "", task_id, json.dumps({"status": "error", "message": error_message}))
             
             pbar.update_absolute(95)
             print(f"Video generation completed. URL: {video_url}")
@@ -5175,8 +5463,7 @@ class NakuNodeAPI_vidu_start_end2video:
             print(error_message)
             import traceback
             traceback.print_exc()
-            empty_video = ComflyVideoAdapter("")
-            return (empty_video, "", "", json.dumps({"status": "error", "message": error_message}))
+            return ("", "", "", json.dumps({"status": "error", "message": error_message}))
 
 
 # NODE MAPPINGS
@@ -5194,6 +5481,7 @@ NODE_CLASS_MAPPINGS = {
     "NakuNodeAPI_kling_multi_image2video": NakuNodeAPI_kling_multi_image2video,
     "NakuNodeAPI_video_extend": NakuNodeAPI_video_extend,
     "NakuNodeAPI_lip_sync": NakuNodeAPI_lip_sync,
+    "NakuNodeAPI_kling_o1_video": NakuNodeAPI_kling_o1_video,
 
     # Midjourney Nodes
     "NakuNodeAPI_upload": NakuNodeAPI_upload,
@@ -5232,6 +5520,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "NakuNodeAPI_kling_multi_image2video": "NakuNodeAPI Kling Multi Image2Video",
     "NakuNodeAPI_video_extend": "NakuNodeAPI Video Extend",
     "NakuNodeAPI_lip_sync": "NakuNodeAPI Lip Sync",
+    "NakuNodeAPI_kling_o1_video": "NakuNodeAPI Kling O1-Video",
 
     # Midjourney Nodes
     "NakuNodeAPI_upload": "NakuNodeAPI MJ Upload",
@@ -5373,6 +5662,7 @@ NODE_CLASS_MAPPINGS = {
     "NakuNodeAPI_kling_multi_image2video": NakuNodeAPI_kling_multi_image2video,
     "NakuNodeAPI_video_extend": NakuNodeAPI_video_extend,
     "NakuNodeAPI_lip_sync": NakuNodeAPI_lip_sync,
+    "NakuNodeAPI_kling_o1_video": NakuNodeAPI_kling_o1_video,
 
     # Midjourney Nodes
     "NakuNodeAPI_upload": NakuNodeAPI_upload,
@@ -5415,6 +5705,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "NakuNodeAPI_kling_multi_image2video": "NakuNodeAPI Kling Multi Image2Video",
     "NakuNodeAPI_video_extend": "NakuNodeAPI Video Extend",
     "NakuNodeAPI_lip_sync": "NakuNodeAPI Lip Sync",
+    "NakuNodeAPI_kling_o1_video": "NakuNodeAPI Kling O1-Video",
 
     # Midjourney Nodes
     "NakuNodeAPI_upload": "NakuNodeAPI MJ Upload",
