@@ -141,7 +141,7 @@ class NakuNodeAPI_Googel_Veo3:
             }
         }
 
-    RETURN_TYPES = (("VIDEO",), "STRING", "STRING")
+    RETURN_TYPES = ("STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "response")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -162,6 +162,21 @@ class NakuNodeAPI_Googel_Veo3:
             return None
 
         pil_image = tensor2pil_naku(image_tensor)[0]
+
+        # Resize image if too large to prevent "request entity too large" error
+        # Maintain aspect ratio by resizing the longest side to 1920 pixels
+        max_dimension = 1920
+        original_width, original_height = pil_image.size
+
+        if original_width > max_dimension or original_height > max_dimension:
+            # Calculate the scaling factor to maintain aspect ratio
+            scale_factor = max_dimension / max(original_width, original_height)
+            new_width = int(original_width * scale_factor)
+            new_height = int(original_height * scale_factor)
+
+            # Resize the image using LANCZOS resampling for better quality
+            pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
         buffered = BytesIO()
         pil_image.save(buffered, format="PNG")
         return base64.b64encode(buffered.getvalue()).decode('utf-8')
@@ -307,8 +322,7 @@ class NakuNodeAPI_Googel_Veo3:
                     "images_count": len([img for img in [image1, image2, image3] if img is not None])
                 }
 
-                video_adapter = ComflyVideoAdapter(video_url)
-                return (video_adapter, video_url, json.dumps(response_data))
+                return (video_url, video_url, json.dumps(response_data))
 
         except Exception as e:
             error_message = f"Error generating video: {str(e)}"
@@ -359,6 +373,21 @@ class NakuNodeAPI_nano_banana:
             return None
 
         pil_image = tensor2pil_naku(image_tensor)[0]
+
+        # Resize image if too large to prevent "request entity too large" error
+        # Maintain aspect ratio by resizing the longest side to 1920 pixels
+        max_dimension = 1920
+        original_width, original_height = pil_image.size
+
+        if original_width > max_dimension or original_height > max_dimension:
+            # Calculate the scaling factor to maintain aspect ratio
+            scale_factor = max_dimension / max(original_width, original_height)
+            new_width = int(original_width * scale_factor)
+            new_height = int(original_height * scale_factor)
+
+            # Resize the image using LANCZOS resampling for better quality
+            pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
         buffered = BytesIO()
         pil_image.save(buffered, format="PNG")
         base64_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
@@ -565,6 +594,21 @@ class NakuNodeAPI_nano_banana_edit:
             return None
 
         pil_image = tensor2pil_naku(image_tensor)[0]
+
+        # Resize image if too large to prevent "request entity too large" error
+        # Maintain aspect ratio by resizing the longest side to 1920 pixels
+        max_dimension = 1920
+        original_width, original_height = pil_image.size
+
+        if original_width > max_dimension or original_height > max_dimension:
+            # Calculate the scaling factor to maintain aspect ratio
+            scale_factor = max_dimension / max(original_width, original_height)
+            new_width = int(original_width * scale_factor)
+            new_height = int(original_height * scale_factor)
+
+            # Resize the image using LANCZOS resampling for better quality
+            pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
         buffered = BytesIO()
         pil_image.save(buffered, format="PNG")
         return base64.b64encode(buffered.getvalue()).decode('utf-8')
@@ -867,6 +911,21 @@ class NakuNodeAPI_nano_banana2_edit:
             return None
 
         pil_image = tensor2pil_naku(image_tensor)[0]
+
+        # Resize image if too large to prevent "request entity too large" error
+        # Maintain aspect ratio by resizing the longest side to 1920 pixels
+        max_dimension = 1920
+        original_width, original_height = pil_image.size
+
+        if original_width > max_dimension or original_height > max_dimension:
+            # Calculate the scaling factor to maintain aspect ratio
+            scale_factor = max_dimension / max(original_width, original_height)
+            new_width = int(original_width * scale_factor)
+            new_height = int(original_height * scale_factor)
+
+            # Resize the image using LANCZOS resampling for better quality
+            pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
         buffered = BytesIO()
         pil_image.save(buffered, format="PNG")
         return base64.b64encode(buffered.getvalue()).decode('utf-8')
@@ -1271,7 +1330,7 @@ class NakuNodeAPI_kling_text2video:
             }
         }
 
-    RETURN_TYPES = (("VIDEO",), "STRING", "STRING", "STRING", "STRING")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "task_id", "video_id", "response")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -1423,8 +1482,7 @@ class NakuNodeAPI_kling_text2video:
                         "video_url": video_url
                     }
 
-                    video_adapter = ComflyVideoAdapter(video_url)
-                    return (video_adapter, video_url, task_id, video_id, json.dumps(response_data))
+                    return (video_url, video_url, task_id, video_id, json.dumps(response_data))
 
                 elif status_result["data"]["task_status"] == "failed":
                     error_msg = status_result["data"].get("task_status_msg", "Unknown error")
@@ -1466,7 +1524,7 @@ class NakuNodeAPI_kling_image2video:
             }
         }
 
-    RETURN_TYPES = (("VIDEO",), "STRING", "STRING", "STRING", "STRING")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "task_id", "video_id", "response")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -1649,8 +1707,7 @@ class NakuNodeAPI_kling_image2video:
                         "video_url": video_url
                     }
 
-                    video_adapter = ComflyVideoAdapter(video_url)
-                    return (video_adapter, video_url, task_id, video_id, json.dumps(response_data))
+                    return (video_url, video_url, task_id, video_id, json.dumps(response_data))
 
                 elif status_result["data"]["task_status"] == "failed":
                     error_msg = status_result["data"].get("task_status_msg", "Unknown error")
@@ -1706,7 +1763,7 @@ class NakuNodeAPI_kling_multi_image2video:
             }
         }
 
-    RETURN_TYPES = (("VIDEO",), "STRING", "STRING", "STRING", "STRING")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "task_id", "video_id", "response")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -1738,6 +1795,21 @@ class NakuNodeAPI_kling_multi_image2video:
 
         try:
             pil_image = tensor2pil_naku(image_tensor)[0]
+
+            # Resize image if too large to prevent "request entity too large" error
+            # Maintain aspect ratio by resizing the longest side to 1920 pixels
+            max_dimension = 1920
+            original_width, original_height = pil_image.size
+
+            if original_width > max_dimension or original_height > max_dimension:
+                # Calculate the scaling factor to maintain aspect ratio
+                scale_factor = max_dimension / max(original_width, original_height)
+                new_width = int(original_width * scale_factor)
+                new_height = int(original_height * scale_factor)
+
+                # Resize the image using LANCZOS resampling for better quality
+                pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
             buffered = BytesIO()
             pil_image.save(buffered, format="PNG")
             return base64.b64encode(buffered.getvalue()).decode('utf-8')
@@ -1975,7 +2047,7 @@ class NakuNodeAPI_video_extend:
             }
         }
 
-    RETURN_TYPES = (("VIDEO",), "STRING", "STRING")
+    RETURN_TYPES = ("STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_id", "response")
     FUNCTION = "extend_video"
     CATEGORY = CATEGORY_TYPE
@@ -2048,8 +2120,7 @@ class NakuNodeAPI_video_extend:
                         "video_url": video_url
                     }
 
-                    video_adapter = ComflyVideoAdapter(video_url)
-                    return (video_adapter, new_video_id, json.dumps(response_data))
+                    return (video_url, new_video_id, json.dumps(response_data))
 
                 elif status_result["data"]["task_status"] == "failed":
                     error_msg = status_result["data"].get("task_status_msg", "Unknown error")
@@ -2158,7 +2229,7 @@ class NakuNodeAPI_lip_sync:
             }
         }
 
-    RETURN_TYPES = (("VIDEO",), "STRING", "STRING", "STRING")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "task_id", "response")
     FUNCTION = "process_lip_sync"
     CATEGORY = CATEGORY_TYPE
@@ -2250,8 +2321,7 @@ class NakuNodeAPI_lip_sync:
                         "video_url": video_url
                     }
 
-                    video_adapter = ComflyVideoAdapter(video_url)
-                    return (video_adapter, video_url, task_id, json.dumps(response_data))
+                    return (video_url, video_url, task_id, json.dumps(response_data))
 
                 elif status_result["data"]["task_status"] == "failed":
                     error_msg = status_result["data"].get("task_status_msg", "Unknown error")
@@ -3092,7 +3162,7 @@ class NakuNodeAPI_mj_video(NakuNodeAPIBaseNode):
             }
         }
 
-    RETURN_TYPES = (("VIDEO",), "STRING", "STRING")
+    RETURN_TYPES = ("STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "message")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -3145,8 +3215,7 @@ class NakuNodeAPI_mj_video(NakuNodeAPIBaseNode):
                     # Wait for video generation to complete
                     video_url = self.wait_for_video_completion(task_id)
                     if video_url:
-                        video_adapter = ComflyVideoAdapter(video_url)
-                        return (video_adapter, video_url, f"Video generated successfully. Task ID: {task_id}")
+                        return (video_url, video_url, f"Video generated successfully. Task ID: {task_id}")
                     else:
                         return ("", "", f"Failed to get video URL for task: {task_id}")
                 else:
@@ -3256,7 +3325,7 @@ class NakuNodeAPI_mj_video_extend(NakuNodeAPIBaseNode):
             }
         }
 
-    RETURN_TYPES = (("VIDEO",), "STRING", "STRING")
+    RETURN_TYPES = ("STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "message")
     FUNCTION = "extend_video"
     CATEGORY = CATEGORY_TYPE
@@ -3296,8 +3365,7 @@ class NakuNodeAPI_mj_video_extend(NakuNodeAPIBaseNode):
                     # Wait for video extension to complete
                     video_url = self.wait_for_video_completion(new_task_id)
                     if video_url:
-                        video_adapter = ComflyVideoAdapter(video_url)
-                        return (video_adapter, video_url, f"Video extended successfully. New Task ID: {new_task_id}")
+                        return (video_url, video_url, f"Video extended successfully. New Task ID: {new_task_id}")
                     else:
                         return ("", "", f"Failed to get extended video URL for task: {new_task_id}")
                 else:
@@ -3819,7 +3887,7 @@ class NakuNodeAPI_sora2:
             }
         }
 
-    RETURN_TYPES = (("VIDEO",), "STRING", "STRING")
+    RETURN_TYPES = ("STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "response")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -3924,9 +3992,8 @@ class NakuNodeAPI_sora2:
                                 "duration": duration,
                                 "quality": quality
                             }
-                            
-                            video_adapter = ComflyVideoAdapter(video_url)
-                            return (video_adapter, video_url, json.dumps(response_data))
+
+                            return (video_url, video_url, json.dumps(response_data))
                     elif status == "failed":
                         error_message = status_result.get("error_message", "Unknown error")
                         return ("", "", json.dumps({"status": "error", "message": f"Video generation failed: {error_message}"}))
@@ -3966,7 +4033,7 @@ class NakuNodeAPI_sora2_character:
             }
         }
 
-    RETURN_TYPES = (("VIDEO",), "STRING", "STRING")
+    RETURN_TYPES = ("STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "response")
     FUNCTION = "generate_character_video"
     CATEGORY = CATEGORY_TYPE
@@ -4076,9 +4143,8 @@ class NakuNodeAPI_sora2_character:
                                 "duration": duration,
                                 "quality": quality
                             }
-                            
-                            video_adapter = ComflyVideoAdapter(video_url)
-                            return (video_adapter, video_url, json.dumps(response_data))
+
+                            return (video_url, video_url, json.dumps(response_data))
                     elif status == "failed":
                         error_message = status_result.get("error_message", "Unknown error")
                         return ("", "", json.dumps({"status": "error", "message": f"Character video generation failed: {error_message}"}))
@@ -4203,7 +4269,7 @@ class NakuNodeAPI_vidu_img2video:
             }
         }
 
-    RETURN_TYPES = (("VIDEO",), "STRING", "STRING", "STRING")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "task_id", "response")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -4215,21 +4281,36 @@ class NakuNodeAPI_vidu_img2video:
     def get_headers(self):
         return {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}"  
+            "Authorization": f"Bearer {self.api_key}"
         }
-    
+
     def image_to_base64(self, image_tensor):
         """Convert tensor to base64 string with data URI prefix"""
         if image_tensor is None:
             return None
-            
+
         pil_image = tensor2pil_naku(image_tensor)[0]
+
+        # Resize image if too large to prevent "request entity too large" error
+        # Maintain aspect ratio by resizing the longest side to 1920 pixels
+        max_dimension = 1920
+        original_width, original_height = pil_image.size
+
+        if original_width > max_dimension or original_height > max_dimension:
+            # Calculate the scaling factor to maintain aspect ratio
+            scale_factor = max_dimension / max(original_width, original_height)
+            new_width = int(original_width * scale_factor)
+            new_height = int(original_height * scale_factor)
+
+            # Resize the image using LANCZOS resampling for better quality
+            pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
         buffered = BytesIO()
         pil_image.save(buffered, format="PNG")
         base64_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
         return f"data:image/png;base64,{base64_str}"
-    
-    def generate_video(self, image, prompt, model="viduq2-pro", api_key="", 
+
+    def generate_video(self, image, prompt, model="viduq2-pro", api_key="",
                       audio=False, voice_language="中文(普通话)", voice_id="male-qn-jingying", 
                       is_rec=False, duration=5, seed=0, resolution="720p", 
                       movement_amplitude="auto", bgm=False, off_peak=False, 
@@ -4377,9 +4458,9 @@ class NakuNodeAPI_vidu_img2video:
                 "voice_language": voice_language if audio else "N/A",
                 "voice_id": voice_id if audio else "N/A"
             }
-            
+
             pbar.update_absolute(100)
-            return (video_adapter, video_url, task_id, json.dumps(response_data))
+            return (video_url, video_url, task_id, json.dumps(response_data))
             
         except Exception as e:
             error_message = f"Error generating video: {str(e)}"
@@ -4416,8 +4497,8 @@ class NakuNodeAPI_vidu_text2video:
                 "wm_position": ([1, 2, 3, 4], {"default": 3}),
             }
         }
-    
-    RETURN_TYPES = (("VIDEO",), "STRING", "STRING", "STRING")
+
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "task_id", "response")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -4565,9 +4646,9 @@ class NakuNodeAPI_vidu_text2video:
                 "aspect_ratio": aspect_ratio,
                 "seed": result.get("seed", seed)
             }
-            
+
             pbar.update_absolute(100)
-            return (video_adapter, video_url, task_id, json.dumps(response_data))
+            return (video_url, video_url, task_id, json.dumps(response_data))
             
         except Exception as e:
             error_message = f"Error generating video: {str(e)}"
@@ -4585,17 +4666,17 @@ class NakuNodeAPI_vidu_ref2video:
     """
     
     VOICE_OPTIONS = NakuNodeAPI_vidu_img2video.VOICE_OPTIONS
-    
+
     @classmethod
     def INPUT_TYPES(cls):
         all_voices = [""]
         for lang, voices in cls.VOICE_OPTIONS.items():
             all_voices.extend(voices)
-        
+
         return {
             "required": {
                 "prompt": ("STRING", {"multiline": True}),
-                "model": (["viduq2", "viduq1", "vidu2.0", "vidu1.5"], 
+                "model": (["viduq2", "viduq1", "vidu2.0", "vidu1.5"],
                          {"default": "viduq2"}),
             },
             "optional": {
@@ -4625,8 +4706,8 @@ class NakuNodeAPI_vidu_ref2video:
                 "wm_position": ([1, 2, 3, 4], {"default": 3}),
             }
         }
-    
-    RETURN_TYPES = (("VIDEO",), "STRING", "STRING", "STRING")
+
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "task_id", "response")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -4645,8 +4726,23 @@ class NakuNodeAPI_vidu_ref2video:
         """Convert tensor to base64 string with data URI prefix"""
         if image_tensor is None:
             return None
-            
+
         pil_image = tensor2pil_naku(image_tensor)[0]
+
+        # Resize image if too large to prevent "request entity too large" error
+        # Maintain aspect ratio by resizing the longest side to 1920 pixels
+        max_dimension = 1920
+        original_width, original_height = pil_image.size
+
+        if original_width > max_dimension or original_height > max_dimension:
+            # Calculate the scaling factor to maintain aspect ratio
+            scale_factor = max_dimension / max(original_width, original_height)
+            new_width = int(original_width * scale_factor)
+            new_height = int(original_height * scale_factor)
+
+            # Resize the image using LANCZOS resampling for better quality
+            pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
         buffered = BytesIO()
         pil_image.save(buffered, format="PNG")
         base64_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
@@ -4833,9 +4929,9 @@ class NakuNodeAPI_vidu_ref2video:
                 "images_count": len(image_base64_list),
                 "seed": result.get("seed", seed)
             }
-            
+
             pbar.update_absolute(100)
-            return (video_adapter, video_url, task_id, json.dumps(response_data))
+            return (video_url, video_url, task_id, json.dumps(response_data))
             
         except Exception as e:
             error_message = f"Error generating video: {str(e)}"
@@ -4874,8 +4970,8 @@ class NakuNodeAPI_vidu_start_end2video:
                 "wm_position": ([1, 2, 3, 4], {"default": 3}),
             }
         }
-    
-    RETURN_TYPES = (("VIDEO",), "STRING", "STRING", "STRING")
+
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("video", "video_url", "task_id", "response")
     FUNCTION = "generate_video"
     CATEGORY = CATEGORY_TYPE
@@ -4894,8 +4990,23 @@ class NakuNodeAPI_vidu_start_end2video:
         """Convert tensor to base64 string with data URI prefix"""
         if image_tensor is None:
             return None
-            
+
         pil_image = tensor2pil_naku(image_tensor)[0]
+
+        # Resize image if too large to prevent "request entity too large" error
+        # Maintain aspect ratio by resizing the longest side to 1920 pixels
+        max_dimension = 1920
+        original_width, original_height = pil_image.size
+
+        if original_width > max_dimension or original_height > max_dimension:
+            # Calculate the scaling factor to maintain aspect ratio
+            scale_factor = max_dimension / max(original_width, original_height)
+            new_width = int(original_width * scale_factor)
+            new_height = int(original_height * scale_factor)
+
+            # Resize the image using LANCZOS resampling for better quality
+            pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
         buffered = BytesIO()
         pil_image.save(buffered, format="PNG")
         base64_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
@@ -5045,9 +5156,9 @@ class NakuNodeAPI_vidu_start_end2video:
                 "resolution": resolution,
                 "seed": result.get("seed", seed)
             }
-            
+
             pbar.update_absolute(100)
-            return (video_adapter, video_url, task_id, json.dumps(response_data))
+            return (video_url, video_url, task_id, json.dumps(response_data))
             
         except Exception as e:
             error_message = f"Error generating video: {str(e)}"
