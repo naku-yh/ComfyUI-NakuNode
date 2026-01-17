@@ -81,6 +81,17 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 - 基于Comfly重新编译的API节点
 - 除了使用Comfly的api地址外，使用“IP”即可填写任意API节点
 
+### 7. Flux2节点
+
+#### NakuNode Flux2 Image Reference (NakuNode_Flux2)
+- 专为Flux2模型设计的图像参考节点
+- 最多支持5张参考图像作为输入
+- 使用选定的VAE将图像编码为参考潜空间
+- 将参考潜空间的视觉特征与文本条件相结合
+- 动态融合视觉和文本特征以增强生成效果
+- 可调节强度参数以控制参考图像的影响
+- 节点位于 "Flux2" 类别下
+
 
 ## 安装
 
@@ -89,8 +100,8 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 
 ## 使用方法
 
-所有节点都可以在 ComfyUI 的节点菜单中找到，位于 "NakuNodes" 类别下。
+所有节点都可以在 ComfyUI 的节点菜单中找到，位于 "NakuNodes" 类别下。Flux2相关节点位于 "Flux2" 类别下。
 
 ## 版本信息
 
-**NakuNode V2.0.2** ---  NakuNode is build by Naku. It can make your work more easier.
+**NakuNode V2.1.0** ---  NakuNode is build by Naku. It can make your work more easier.

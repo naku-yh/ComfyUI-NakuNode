@@ -1,7 +1,7 @@
 [project]
 name = "naku_nodes"
 description = "This is a toolset designed for ComfyUI, providing a series of practical image processing and operation nodes, making our operation more intuitive and convenient"
-version = "2.0.0"
+version = "2.1.0"
 license = { text = "MIT License" }
 dependencies = ["opencv-contrib-python", "Pillow", "torch", "numpy"]
 
