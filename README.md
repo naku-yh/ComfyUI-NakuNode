@@ -1,8 +1,6 @@
 # ComfyUI-NakuNode
 
-## 鸣谢
-
-本项目中的 FastCanvas 节点基于 GitHub 作者 @LAOGOU-666 (https://github.com/LAOGOU-666) 开源的 fastcanvas 节点进行开发，在此表示感谢！
+**NakuNode V2.1.0** ---  NakuNode is build by Naku. It can make your work more easier.
 
 ## 介绍
 
@@ -102,6 +100,6 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 
 所有节点都可以在 ComfyUI 的节点菜单中找到，位于 "NakuNodes" 类别下。Flux2相关节点位于 "Flux2" 类别下。
 
-## 版本信息
+## 鸣谢
 
-**NakuNode V2.1.0** ---  NakuNode is build by Naku. It can make your work more easier.
+本项目中的 FastCanvas 节点基于 GitHub 作者 @LAOGOU-666 (https://github.com/LAOGOU-666) 开源的 fastcanvas 节点进行开发，在此表示感谢！
