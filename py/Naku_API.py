@@ -4513,7 +4513,9 @@ class NakuNodeAPI_vidu_img2video:
                         err_code = status_result.get("err_code", "Unknown error")
                         error_message = f"Video generation failed: {err_code}"
                         print(error_message)
-                        return ("", "", task_id, json.dumps({"status": "error", "message": error_message}))
+                        # Return a default video adapter object instead of empty strings to maintain compatibility
+                        default_video_adapter = ComflyVideoAdapter("")
+                        return (default_video_adapter, "", task_id, json.dumps({"status": "error", "message": error_message}))
                         
                 except Exception as e:
                     print(f"Error checking generation status (attempt {attempts}): {str(e)}")
@@ -4521,7 +4523,9 @@ class NakuNodeAPI_vidu_img2video:
             if not video_url:
                 error_message = f"Failed to retrieve video URL after {max_attempts} attempts"
                 print(error_message)
-                return ("", "", task_id, json.dumps({"status": "error", "message": error_message}))
+                # Return a default video adapter object instead of empty strings to maintain compatibility
+                default_video_adapter = ComflyVideoAdapter("")
+                return (default_video_adapter, "", task_id, json.dumps({"status": "error", "message": error_message}))
             
             pbar.update_absolute(95)
             print(f"Video generation completed. URL: {video_url}")
@@ -4549,7 +4553,9 @@ class NakuNodeAPI_vidu_img2video:
             print(error_message)
             import traceback
             traceback.print_exc()
-            return ("", "", "", json.dumps({"status": "error", "message": error_message}))
+            # Return a default video adapter object instead of empty strings to maintain compatibility
+            default_video_adapter = ComflyVideoAdapter("")
+            return (default_video_adapter, "", "", json.dumps({"status": "error", "message": error_message}))
 
 
 class NakuNodeAPI_vidu_text2video:
@@ -4697,7 +4703,9 @@ class NakuNodeAPI_vidu_text2video:
                         err_code = status_result.get("err_code", "Unknown error")
                         error_message = f"Video generation failed: {err_code}"
                         print(error_message)
-                        return ("", "", task_id, json.dumps({"status": "error", "message": error_message}))
+                        # Return a default video adapter object instead of empty strings to maintain compatibility
+                        default_video_adapter = ComflyVideoAdapter("")
+                        return (default_video_adapter, "", task_id, json.dumps({"status": "error", "message": error_message}))
                         
                 except Exception as e:
                     print(f"Error checking generation status (attempt {attempts}): {str(e)}")
@@ -4705,7 +4713,9 @@ class NakuNodeAPI_vidu_text2video:
             if not video_url:
                 error_message = f"Failed to retrieve video URL after {max_attempts} attempts"
                 print(error_message)
-                return ("", "", task_id, json.dumps({"status": "error", "message": error_message}))
+                # Return a default video adapter object instead of empty strings to maintain compatibility
+                default_video_adapter = ComflyVideoAdapter("")
+                return (default_video_adapter, "", task_id, json.dumps({"status": "error", "message": error_message}))
             
             pbar.update_absolute(95)
             print(f"Video generation completed. URL: {video_url}")
@@ -4732,27 +4742,23 @@ class NakuNodeAPI_vidu_text2video:
             print(error_message)
             import traceback
             traceback.print_exc()
-            return ("", "", "", json.dumps({"status": "error", "message": error_message}))
+            # Return a default video adapter object instead of empty strings to maintain compatibility
+            default_video_adapter = ComflyVideoAdapter("")
+            return (default_video_adapter, "", "", json.dumps({"status": "error", "message": error_message}))
 
 
 class NakuNodeAPI_vidu_ref2video:
     """
     NakuNodeAPI Vidu Reference to Video node
-    Generates videos from reference images with optional audio
+    Generates videos from reference images based on official API specification
     """
-    
-    VOICE_OPTIONS = NakuNodeAPI_vidu_img2video.VOICE_OPTIONS
 
     @classmethod
     def INPUT_TYPES(cls):
-        all_voices = [""]
-        for lang, voices in cls.VOICE_OPTIONS.items():
-            all_voices.extend(voices)
-
         return {
             "required": {
                 "prompt": ("STRING", {"multiline": True}),
-                "model": (["viduq2", "viduq1", "vidu2.0", "vidu1.5"],
+                "model": (["viduq2", "viduq1", "vidu2.0", "vidu1.5"],  # Updated according to API docs
                          {"default": "viduq2"}),
             },
             "optional": {
@@ -4764,17 +4770,10 @@ class NakuNodeAPI_vidu_ref2video:
                 "image5": ("IMAGE",),
                 "image6": ("IMAGE",),
                 "image7": ("IMAGE",),
-                "audio": ("BOOLEAN", {"default": False}),
-                "subject1_id": ("STRING", {"default": "1"}),
-                "subject1_voice_id": (all_voices, {"default": ""}),
-                "subject2_id": ("STRING", {"default": "2"}),
-                "subject2_voice_id": (all_voices, {"default": ""}),
-                "subject3_id": ("STRING", {"default": "3"}),
-                "subject3_voice_id": (all_voices, {"default": ""}),
                 "duration": ("INT", {"default": 5, "min": 1, "max": 10}),
                 "seed": ("INT", {"default": 0, "min": 0, "max": 2147483647}),
                 "aspect_ratio": (["16:9", "9:16", "4:3", "3:4", "1:1"], {"default": "16:9"}),
-                "resolution": (["540p", "720p", "1080p"], {"default": "720p"}),
+                "resolution": (["360p", "540p", "720p", "1080p"], {"default": "720p"}),  # Updated according to API docs
                 "movement_amplitude": (["auto", "small", "medium", "large"], {"default": "auto"}),
                 "bgm": ("BOOLEAN", {"default": False}),
                 "off_peak": ("BOOLEAN", {"default": False}),
@@ -4795,9 +4794,9 @@ class NakuNodeAPI_vidu_ref2video:
     def get_headers(self):
         return {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}"
+            "Authorization": f"Bearer {self.api_key}"  # Using Bearer token as per current implementation
         }
-    
+
     def image_to_base64(self, image_tensor):
         """Convert tensor to base64 string with data URI prefix"""
         if image_tensor is None:
@@ -4822,145 +4821,153 @@ class NakuNodeAPI_vidu_ref2video:
         buffered = BytesIO()
         pil_image.save(buffered, format="PNG")
         base64_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
-        return base64_str  # Return pure base64 string without data URI prefix
-    
+        # Return base64 with proper data URI format as required by API
+        return f"data:image/png;base64,{base64_str}"
+
     def generate_video(self, prompt, model="viduq2", api_key="",
                       image1=None, image2=None, image3=None, image4=None,
                       image5=None, image6=None, image7=None,
-                      audio=False, subject1_id="1", subject1_voice_id="",
-                      subject2_id="2", subject2_voice_id="",
-                      subject3_id="3", subject3_voice_id="",
                       duration=5, seed=0, aspect_ratio="16:9", resolution="720p",
                       movement_amplitude="auto", bgm=False, off_peak=False,
                       watermark=False, wm_position=3):
-        
+
         if api_key.strip():
             self.api_key = api_key
             config = get_config()
             config['api_key'] = api_key
-            
+
         if not self.api_key:
             error_response = {"status": "error", "message": "API key not provided or not found in config"}
             return ("", "", "", json.dumps(error_response))
-            
+
         try:
             pbar = comfy.utils.ProgressBar(100)
             pbar.update_absolute(10)
 
+            # Collect all provided images
             all_images = [image1, image2, image3, image4, image5, image6, image7]
             image_base64_list = []
-            
+
             for img in all_images:
                 if img is not None:
-                    img_base64 = self.image_to_base64(img)
-                    if img_base64:
-                        image_base64_list.append(img_base64)
-            
+                    # Handle batched images if present
+                    if len(img.shape) == 4:
+                        batch_size = img.shape[0]
+                        for i in range(batch_size):
+                            single_image = img[i:i+1]
+                            img_base64 = self.image_to_base64(single_image)
+                            if img_base64:
+                                image_base64_list.append(img_base64)
+                    else:
+                        # Single image
+                        img_base64 = self.image_to_base64(img)
+                        if img_base64:
+                            image_base64_list.append(img_base64)
+
             if not image_base64_list:
                 error_message = "No images provided. At least one image is required."
                 print(error_message)
                 return ("", "", "", json.dumps({"status": "error", "message": error_message}))
 
+            # Validate image count based on model according to API docs
+            if model in ["vidu2.0", "vidu1.5"]:
+                if len(image_base64_list) > 3:
+                    error_message = f"Model {model} supports only 1-3 images, but {len(image_base64_list)} were provided."
+                    print(error_message)
+                    return ("", "", "", json.dumps({"status": "error", "message": error_message}))
+            elif model in ["viduq2", "viduq1"]:
+                if len(image_base64_list) > 7:
+                    error_message = f"Model {model} supports only 1-7 images, but {len(image_base64_list)} were provided."
+                    print(error_message)
+                    return ("", "", "", json.dumps({"status": "error", "message": error_message}))
+
+            # Validate prompt length according to API docs
+            if len(prompt) > 1500:
+                error_message = f"Prompt exceeds maximum length of 1500 characters. Current length: {len(prompt)}"
+                print(error_message)
+                return ("", "", "", json.dumps({"status": "error", "message": error_message}))
+
+            # Set default duration based on model according to API docs
+            if model == "viduq2":
+                if duration < 1 or duration > 10:
+                    duration = 5  # Default for viduq2
+            elif model == "viduq1":
+                duration = 5  # Fixed to 5 for viduq1
+            elif model in ["vidu2.0", "vidu1.5"]:
+                if model == "vidu2.0":
+                    duration = 4  # Fixed to 4 for vidu2.0
+                elif model == "vidu1.5":
+                    if duration not in [4, 8]:
+                        duration = 4  # Default for vidu1.5
+
             payload = {
                 "model": model,
+                "images": image_base64_list,
                 "prompt": prompt,
                 "duration": duration,
                 "seed": seed if seed > 0 else 0,
                 "aspect_ratio": aspect_ratio,
                 "resolution": resolution,
                 "movement_amplitude": movement_amplitude,
-                "off_peak": off_peak
+                "bgm": bgm,
+                "off_peak": off_peak,
+                "watermark": watermark,
+                "wm_position": wm_position
             }
-
-            if audio:
-                subjects = []
- 
-                subject_images = [[], [], []]
-                for i, img_b64 in enumerate(image_base64_list):
-                    subject_idx = min(i // 3, 2)  
-                    if len(subject_images[subject_idx]) < 3:
-                        subject_images[subject_idx].append(img_b64)
-
-                subject_configs = [
-                    (subject1_id, subject1_voice_id, subject_images[0]),
-                    (subject2_id, subject2_voice_id, subject_images[1]),
-                    (subject3_id, subject3_voice_id, subject_images[2])
-                ]
-                
-                for subj_id, voice_id, images in subject_configs:
-                    if images:
-                        subject = {
-                            "id": subj_id,
-                            "images": images,
-                            "voice_id": voice_id if voice_id else ""
-                        }
-                        subjects.append(subject)
-                
-                if subjects:
-                    payload["subjects"] = subjects
-                    payload["audio"] = True
-            else:
-                payload["images"] = image_base64_list
-                if bgm:
-                    payload["bgm"] = True
-            
-            if watermark:
-                payload["watermark"] = True
-                payload["wm_position"] = wm_position
 
             pbar.update_absolute(20)
 
             response = requests.post(
-                f"{get_baseurl()}/vidu/v2/reference2video",
+                f"{get_baseurl()}/vidu/v2/reference2video",  # Using the correct endpoint
                 headers=self.get_headers(),
                 json=payload,
                 timeout=self.timeout
             )
-            
+
             pbar.update_absolute(30)
-            
+
             if response.status_code != 200:
                 error_message = f"API Error: {response.status_code} - {response.text}"
                 print(error_message)
                 return ("", "", "", json.dumps({"status": "error", "message": error_message}))
-                
+
             result = response.json()
-            
+
             if "task_id" not in result:
                 error_message = f"No task_id in response: {result}"
                 print(error_message)
                 return ("", "", "", json.dumps({"status": "error", "message": error_message}))
-                
+
             task_id = result.get("task_id")
-            
+
             pbar.update_absolute(40)
 
             max_attempts = 120
             attempts = 0
             video_url = None
-            
+
             while attempts < max_attempts:
                 time.sleep(10)
                 attempts += 1
-                
+
                 try:
                     status_response = requests.get(
                         f"{get_baseurl()}/vidu/v2/tasks/{task_id}/creations",
                         headers=self.get_headers(),
                         timeout=self.timeout
                     )
-                    
+
                     if status_response.status_code != 200:
                         print(f"Status check failed: {status_response.status_code} - {status_response.text}")
                         continue
-                        
+
                     status_result = status_response.json()
-                    
+
                     state = status_result.get("state", "")
 
                     progress_value = min(90, 40 + (attempts * 50 // max_attempts))
                     pbar.update_absolute(progress_value)
-                    
+
                     if state == "success":
                         creations = status_result.get("creations", [])
                         if creations and len(creations) > 0:
@@ -4972,30 +4979,34 @@ class NakuNodeAPI_vidu_ref2video:
                         err_code = status_result.get("err_code", "Unknown error")
                         error_message = f"Video generation failed: {err_code}"
                         print(error_message)
-                        return ("", "", task_id, json.dumps({"status": "error", "message": error_message}))
-                        
+                        # Return a default video adapter object instead of empty strings to maintain compatibility
+                        default_video_adapter = ComflyVideoAdapter("")
+                        return (default_video_adapter, "", task_id, json.dumps({"status": "error", "message": error_message}))
+
                 except Exception as e:
                     print(f"Error checking generation status (attempt {attempts}): {str(e)}")
-            
+
             if not video_url:
                 error_message = f"Failed to retrieve video URL after {max_attempts} attempts"
                 print(error_message)
-                return ("", "", task_id, json.dumps({"status": "error", "message": error_message}))
-            
+                # Return a default video adapter object instead of empty strings to maintain compatibility
+                default_video_adapter = ComflyVideoAdapter("")
+                return (default_video_adapter, "", task_id, json.dumps({"status": "error", "message": error_message}))
+
             pbar.update_absolute(95)
             print(f"Video generation completed. URL: {video_url}")
 
             video_adapter = ComflyVideoAdapter(video_url)
-            
+
             response_data = {
                 "status": "success",
                 "task_id": task_id,
                 "video_url": video_url,
                 "model": model,
+                "prompt": prompt,
                 "duration": duration,
                 "resolution": resolution,
                 "aspect_ratio": aspect_ratio,
-                "audio": audio,
                 "images_count": len(image_base64_list),
                 "seed": result.get("seed", seed)
             }
@@ -5003,13 +5014,15 @@ class NakuNodeAPI_vidu_ref2video:
             pbar.update_absolute(100)
             video_adapter = ComflyVideoAdapter(video_url)
             return (video_adapter, video_url, task_id, json.dumps(response_data))
-            
+
         except Exception as e:
             error_message = f"Error generating video: {str(e)}"
             print(error_message)
             import traceback
             traceback.print_exc()
-            return ("", "", "", json.dumps({"status": "error", "message": error_message}))
+            # Return a default video adapter object instead of empty strings to maintain compatibility
+            default_video_adapter = ComflyVideoAdapter("")
+            return (default_video_adapter, "", "", json.dumps({"status": "error", "message": error_message}))
 
 
 class NakuNodeAPI_kling_o1_video:
@@ -5429,7 +5442,9 @@ class NakuNodeAPI_vidu_start_end2video:
                         err_code = status_result.get("err_code", "Unknown error")
                         error_message = f"Video generation failed: {err_code}"
                         print(error_message)
-                        return ("", "", task_id, json.dumps({"status": "error", "message": error_message}))
+                        # Return a default video adapter object instead of empty strings to maintain compatibility
+                        default_video_adapter = ComflyVideoAdapter("")
+                        return (default_video_adapter, "", task_id, json.dumps({"status": "error", "message": error_message}))
                         
                 except Exception as e:
                     print(f"Error checking generation status (attempt {attempts}): {str(e)}")
@@ -5437,7 +5452,9 @@ class NakuNodeAPI_vidu_start_end2video:
             if not video_url:
                 error_message = f"Failed to retrieve video URL after {max_attempts} attempts"
                 print(error_message)
-                return ("", "", task_id, json.dumps({"status": "error", "message": error_message}))
+                # Return a default video adapter object instead of empty strings to maintain compatibility
+                default_video_adapter = ComflyVideoAdapter("")
+                return (default_video_adapter, "", task_id, json.dumps({"status": "error", "message": error_message}))
             
             pbar.update_absolute(95)
             print(f"Video generation completed. URL: {video_url}")
@@ -5463,7 +5480,313 @@ class NakuNodeAPI_vidu_start_end2video:
             print(error_message)
             import traceback
             traceback.print_exc()
-            return ("", "", "", json.dumps({"status": "error", "message": error_message}))
+            # Return a default video adapter object instead of empty strings to maintain compatibility
+            default_video_adapter = ComflyVideoAdapter("")
+            return (default_video_adapter, "", "", json.dumps({"status": "error", "message": error_message}))
+
+
+class NakuNodeAPI_vidu_ref2video_third_party:
+    """
+    NakuNodeAPI Vidu Reference to Video node for Third Party API
+    Generates videos from reference images based on third-party API specification
+    """
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"multiline": True}),
+                "model": (["viduq2-pro", "viduq2", "viduq1", "vidu2.0", "vidu1.5"],
+                         {"default": "viduq2-pro"}),
+                "duration": ("INT", {"default": 5, "min": 1, "max": 10}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 2147483647}),
+                "resolution": (["360p", "540p", "720p", "1080p"], {"default": "720p"}),
+                "movement_amplitude": (["auto", "small", "medium", "large"], {"default": "auto"}),
+                "off_peak": ("BOOLEAN", {"default": False}),
+            },
+            "optional": {
+                "api_key": ("STRING", {"default": ""}),
+                "image1": ("IMAGE",),
+                "image2": ("IMAGE",),
+                "image3": ("IMAGE",),
+                "image4": ("IMAGE",),
+                "image5": ("IMAGE",),
+                "image6": ("IMAGE",),
+                "image7": ("IMAGE",),
+                "bgm": ("BOOLEAN", {"default": False}),
+                "watermark": ("BOOLEAN", {"default": False}),
+                "wm_position": ([1, 2, 3, 4], {"default": 3}),
+            }
+        }
+
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("video", "video_url", "task_id", "response")
+    FUNCTION = "generate_video"
+    CATEGORY = CATEGORY_TYPE
+
+    def __init__(self):
+        self.api_key = get_config().get('api_key', '')
+        self.timeout = 900
+
+    def get_headers(self):
+        return {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.api_key}"
+        }
+
+    def image_to_base64(self, image_tensor):
+        """Convert tensor to base64 string with data URI prefix"""
+        if image_tensor is None:
+            return None
+
+        pil_image = tensor2pil_naku(image_tensor)[0]
+
+        # Resize image if too large to prevent "request entity too large" error
+        # Maintain aspect ratio by resizing the longest side to 1920 pixels
+        max_dimension = 1920
+        original_width, original_height = pil_image.size
+
+        if original_width > max_dimension or original_height > max_dimension:
+            # Calculate the scaling factor to maintain aspect ratio
+            scale_factor = max_dimension / max(original_width, original_height)
+            new_width = int(original_width * scale_factor)
+            new_height = int(original_height * scale_factor)
+
+            # Resize the image using LANCZOS resampling for better quality
+            pil_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+        buffered = BytesIO()
+        pil_image.save(buffered, format="PNG")
+        base64_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        # Return base64 with proper data URI format as required by API
+        return f"data:image/png;base64,{base64_str}"
+
+    def generate_video(self, prompt, model="viduq2-pro", api_key="",
+                      image1=None, image2=None, image3=None, image4=None,
+                      image5=None, image6=None, image7=None,
+                      duration=5, seed=0, resolution="720p",
+                      movement_amplitude="auto", off_peak=False,
+                      bgm=False, watermark=False, wm_position=3):
+
+        if api_key.strip():
+            self.api_key = api_key
+            config = get_config()
+            config['api_key'] = api_key
+
+        if not self.api_key:
+            error_response = {"status": "error", "message": "API key not provided or not found in config"}
+            # Return a default video adapter object instead of empty strings to maintain compatibility
+            default_video_adapter = ComflyVideoAdapter("")
+            return (default_video_adapter, "", "", json.dumps(error_response))
+
+        try:
+            pbar = comfy.utils.ProgressBar(100)
+            pbar.update_absolute(10)
+
+            # Collect all provided images
+            all_images = [image1, image2, image3, image4, image5, image6, image7]
+            image_base64_list = []
+
+            for img in all_images:
+                if img is not None:
+                    # Handle batched images if present
+                    if len(img.shape) == 4:
+                        batch_size = img.shape[0]
+                        for i in range(batch_size):
+                            single_image = img[i:i+1]
+                            img_base64 = self.image_to_base64(single_image)
+                            if img_base64:
+                                image_base64_list.append(img_base64)
+                    else:
+                        # Single image
+                        img_base64 = self.image_to_base64(img)
+                        if img_base64:
+                            image_base64_list.append(img_base64)
+
+            if not image_base64_list:
+                error_message = "No images provided. At least one image is required."
+                print(error_message)
+                return ("", "", "", json.dumps({"status": "error", "message": error_message}))
+
+            # Validate image count based on model according to API docs
+            if model in ["vidu2.0", "vidu1.5"]:
+                if len(image_base64_list) > 3:
+                    error_message = f"Model {model} supports only 1-3 images, but {len(image_base64_list)} were provided."
+                    print(error_message)
+                    return ("", "", "", json.dumps({"status": "error", "message": error_message}))
+            elif model in ["viduq2", "viduq1"]:
+                if len(image_base64_list) > 7:
+                    error_message = f"Model {model} supports only 1-7 images, but {len(image_base64_list)} were provided."
+                    print(error_message)
+                    return ("", "", "", json.dumps({"status": "error", "message": error_message}))
+
+            # Validate prompt length according to API docs
+            if len(prompt) > 1500:
+                error_message = f"Prompt exceeds maximum length of 1500 characters. Current length: {len(prompt)}"
+                print(error_message)
+                return ("", "", "", json.dumps({"status": "error", "message": error_message}))
+
+            # Set default duration based on model according to API docs
+            if model == "viduq2":
+                if duration < 1 or duration > 10:
+                    duration = 5  # Default for viduq2
+            elif model == "viduq1":
+                duration = 5  # Fixed to 5 for viduq1
+            elif model in ["vidu2.0", "vidu1.5"]:
+                if model == "vidu2.0":
+                    duration = 4  # Fixed to 4 for vidu2.0
+                elif model == "vidu1.5":
+                    if duration not in [4, 8]:
+                        duration = 4  # Default for vidu1.5
+
+            payload = {
+                "model": model,
+                "images": image_base64_list,
+                "prompt": prompt,
+                "duration": duration,
+                "seed": seed if seed > 0 else 0,
+                "resolution": resolution,
+                "movement_amplitude": movement_amplitude,
+                "off_peak": off_peak
+            }
+
+            # Add optional parameters if they are supported by the third-party API
+            if bgm:
+                payload["bgm"] = bgm
+            if watermark:
+                payload["watermark"] = watermark
+                payload["wm_position"] = wm_position
+
+            # Debug: Print the payload being sent to the API
+            print(f"[DEBUG] Sending request to vidu/v2/reference2video with payload:")
+            print(f"  Model: {model}")
+            print(f"  Images count: {len(image_base64_list)}")
+            print(f"  Prompt: {prompt[:100]}{'...' if len(prompt) > 100 else ''}")  # Truncate long prompts
+            print(f"  Duration: {duration}")
+            print(f"  Seed: {seed}")
+            print(f"  Resolution: {resolution}")
+            print(f"  Movement amplitude: {movement_amplitude}")
+            print(f"  Off peak: {off_peak}")
+            if bgm:
+                print(f"  BGM: {bgm}")
+            if watermark:
+                print(f"  Watermark: {watermark}, Position: {wm_position}")
+            print(f"  Full payload keys: {list(payload.keys())}")
+
+            pbar.update_absolute(20)
+
+            response = requests.post(
+                f"{get_baseurl()}/vidu/v2/reference2video",  # Using the correct endpoint for third party
+                headers=self.get_headers(),
+                json=payload,
+                timeout=self.timeout
+            )
+
+            pbar.update_absolute(30)
+
+            # Debug: Print the API response
+            print(f"[DEBUG] API Response Status Code: {response.status_code}")
+            if response.status_code != 200:
+                print(f"[DEBUG] API Response Text: {response.text}")
+
+            if response.status_code != 200:
+                error_message = f"API Error: {response.status_code} - {response.text}"
+                print(error_message)
+                # Return a default video adapter object instead of empty strings to maintain compatibility
+                default_video_adapter = ComflyVideoAdapter("")
+                return (default_video_adapter, "", "", json.dumps({"status": "error", "message": error_message}))
+
+            result = response.json()
+
+            if "task_id" not in result:
+                error_message = f"No task_id in response: {result}"
+                print(error_message)
+                return ("", "", "", json.dumps({"status": "error", "message": error_message}))
+
+            task_id = result.get("task_id")
+
+            pbar.update_absolute(40)
+
+            max_attempts = 120
+            attempts = 0
+            video_url = None
+
+            while attempts < max_attempts:
+                time.sleep(10)
+                attempts += 1
+
+                try:
+                    status_response = requests.get(
+                        f"{get_baseurl()}/vidu/v2/tasks/{task_id}/creations",
+                        headers=self.get_headers(),
+                        timeout=self.timeout
+                    )
+
+                    if status_response.status_code != 200:
+                        print(f"Status check failed: {status_response.status_code} - {status_response.text}")
+                        continue
+
+                    status_result = status_response.json()
+
+                    state = status_result.get("state", "")
+
+                    progress_value = min(90, 40 + (attempts * 50 // max_attempts))
+                    pbar.update_absolute(progress_value)
+
+                    if state == "success":
+                        creations = status_result.get("creations", [])
+                        if creations and len(creations) > 0:
+                            video_url = creations[0].get("url", "")
+                            if video_url:
+                                print(f"Video URL found: {video_url}")
+                                break
+                    elif state == "failed":
+                        err_code = status_result.get("err_code", "Unknown error")
+                        error_message = f"Video generation failed: {err_code}"
+                        print(error_message)
+                        # Return a default video adapter object instead of empty strings to maintain compatibility
+                        default_video_adapter = ComflyVideoAdapter("")
+                        return (default_video_adapter, "", task_id, json.dumps({"status": "error", "message": error_message}))
+
+                except Exception as e:
+                    print(f"Error checking generation status (attempt {attempts}): {str(e)}")
+
+            if not video_url:
+                error_message = f"Failed to retrieve video URL after {max_attempts} attempts"
+                print(error_message)
+                # Return a default video adapter object instead of empty strings to maintain compatibility
+                default_video_adapter = ComflyVideoAdapter("")
+                return (default_video_adapter, "", task_id, json.dumps({"status": "error", "message": error_message}))
+
+            pbar.update_absolute(95)
+            print(f"Video generation completed. URL: {video_url}")
+
+            video_adapter = ComflyVideoAdapter(video_url)
+
+            response_data = {
+                "status": "success",
+                "task_id": task_id,
+                "video_url": video_url,
+                "model": model,
+                "prompt": prompt,
+                "duration": duration,
+                "resolution": resolution,
+                "images_count": len(image_base64_list),
+                "seed": result.get("seed", seed)
+            }
+
+            pbar.update_absolute(100)
+            video_adapter = ComflyVideoAdapter(video_url)
+            return (video_adapter, video_url, task_id, json.dumps(response_data))
+
+        except Exception as e:
+            error_message = f"Error generating video: {str(e)}"
+            print(error_message)
+            import traceback
+            traceback.print_exc()
+            # Return a default video adapter object instead of empty strings to maintain compatibility
+            default_video_adapter = ComflyVideoAdapter("")
+            return (default_video_adapter, "", "", json.dumps({"status": "error", "message": error_message}))
 
 
 # NODE MAPPINGS
@@ -5504,6 +5827,7 @@ NODE_CLASS_MAPPINGS = {
     "NakuNodeAPI_vidu_text2video": NakuNodeAPI_vidu_text2video,
     "NakuNodeAPI_vidu_ref2video": NakuNodeAPI_vidu_ref2video,
     "NakuNodeAPI_vidu_start_end2video": NakuNodeAPI_vidu_start_end2video,
+    "NakuNodeAPI_vidu_ref2video_third_party": NakuNodeAPI_vidu_ref2video_third_party,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -5543,6 +5867,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "NakuNodeAPI_vidu_text2video": "NakuNodeAPI Vidu Text2Video",
     "NakuNodeAPI_vidu_ref2video": "NakuNodeAPI Vidu Ref2Video",
     "NakuNodeAPI_vidu_start_end2video": "NakuNodeAPI Vidu Start-End2Video",
+    "NakuNodeAPI_vidu_ref2video_third_party": "NakuNodeAPI Vidu Ref2Video Third Party",
 }
 
 # Global variable for baseurl that will be shared
@@ -5688,6 +6013,7 @@ NODE_CLASS_MAPPINGS = {
     "NakuNodeAPI_vidu_text2video": NakuNodeAPI_vidu_text2video,
     "NakuNodeAPI_vidu_ref2video": NakuNodeAPI_vidu_ref2video,
     "NakuNodeAPI_vidu_start_end2video": NakuNodeAPI_vidu_start_end2video,
+    "NakuNodeAPI_vidu_ref2video_third_party": NakuNodeAPI_vidu_ref2video_third_party,
 }
 
 # Updated NODE_DISPLAY_NAME_MAPPINGS with the api_set node
@@ -5731,6 +6057,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "NakuNodeAPI_vidu_text2video": "NakuNodeAPI Vidu Text2Video",
     "NakuNodeAPI_vidu_ref2video": "NakuNodeAPI Vidu Ref2Video",
     "NakuNodeAPI_vidu_start_end2video": "NakuNodeAPI Vidu Start-End2Video",
+    "NakuNodeAPI_vidu_ref2video_third_party": "NakuNodeAPI Vidu Ref2Video Third Party",
 }
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
