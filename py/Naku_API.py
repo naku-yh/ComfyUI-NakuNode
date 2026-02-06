@@ -1281,6 +1281,331 @@ class NakuNodeAPI_nano_banana2_edit:
             return (blank_tensor, error_message, "")
 
 
+class NakuNodeAPI_Gemini3Pro_Image:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"multiline": True}),
+                "model": (["gemini-3-pro-image-preview"], {"default": "gemini-3-pro-image-preview"}),
+                "aspect_ratio": (["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"], {"default": "1:1"}),
+                "resolution": (["1K", "2K", "4K"], {"default": "2K"}),
+            },
+            "optional": {
+                "image1": ("IMAGE",),
+                "image2": ("IMAGE",),
+                "image3": ("IMAGE",),
+                "image4": ("IMAGE",),
+                "image5": ("IMAGE",),
+                "image6": ("IMAGE",),
+                "image7": ("IMAGE",),
+                "image8": ("IMAGE",),
+                "image9": ("IMAGE",),
+                "image10": ("IMAGE",),
+                "image11": ("IMAGE",),
+                "image12": ("IMAGE",),
+                "image13": ("IMAGE",),
+                "image14": ("IMAGE",),
+                "api_key": ("STRING", {"default": ""}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 2147483647})
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE", "STRING")
+    RETURN_NAMES = ("image", "response")
+    FUNCTION = "generate_image"
+    CATEGORY = CATEGORY_TYPE
+
+    def __init__(self):
+        # Use the API key and base URL from the API Settings
+        self.api_key = get_config().get('api_key', '') if callable(get_config) else ''
+
+    def image_to_base64(self, image_tensor):
+        """Convert tensor to base64 string"""
+        if image_tensor is None:
+            return None
+
+        pil_image = tensor2pil_naku(image_tensor)[0]
+        buffered = BytesIO()
+        pil_image.save(buffered, format="PNG")
+        return base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+    def generate_image(self, prompt, model="gemini-3-pro-image-preview", aspect_ratio="1:1",
+                      resolution="2K", image1=None, image2=None, image3=None, image4=None,
+                      image5=None, image6=None, image7=None, image8=None, image9=None,
+                      image10=None, image11=None, image12=None, image13=None, image14=None,
+                      api_key="", seed=0):
+
+        # Use provided API key if available, otherwise use the default
+        # Note: This node connects to Google's Gemini API servers directly
+        # and uses the API key for authorization
+        if api_key.strip():
+            use_api_key = api_key
+        else:
+            use_api_key = self.api_key
+
+        if not use_api_key:
+            error_message = "[NakuNode] API key not found in configuration. Please set your Google Gemini API key in the API Settings or provide it directly."
+            print(error_message)
+            blank_image = Image.new('RGB', (1024, 1024), color='white')
+            blank_tensor = pil2tensor_naku(blank_image)
+            return (blank_tensor, error_message)
+
+        # Initialize connection variable
+        conn = None
+        try:
+            import http.client
+            import json
+            import ssl
+            import socket
+            from PIL import Image
+            import io
+            import base64
+            
+            print(f"[NakuNode] Starting Gemini 3 Pro Image generation")
+            print(f"[NakuNode] Model: {model}, Aspect Ratio: {aspect_ratio}, Resolution: {resolution}")
+            
+            # Get the base URL from the API Settings
+            base_url = get_baseurl()
+            print(f"[NakuNode] Using base URL from API Settings: {base_url}")
+            
+            # Prepare the contents list with the prompt as a text part
+            parts = [{"text": prompt}]
+            
+            # Add images to the parts list if they are provided
+            all_images = [image1, image2, image3, image4, image5, image6, image7,
+                         image8, image9, image10, image11, image12, image13, image14]
+            
+            image_count = 0
+            for img_tensor in all_images:
+                if img_tensor is not None:
+                    # Convert tensor to base64
+                    base64_image = self.image_to_base64(img_tensor)
+                    if base64_image:
+                        parts.append({
+                            "inlineData": {
+                                "data": base64_image,
+                                "mimeType": "image/png"
+                            }
+                        })
+                        image_count += 1
+            
+            print(f"[NakuNode] Prepared {image_count} images and prompt for API request")
+            
+            # Create the payload according to the API specification
+            payload = json.dumps({
+                "contents": [
+                    {
+                        "parts": parts,
+                        "role": "user"
+                    }
+                ],
+                "generationConfig": {
+                    "imageConfig": {
+                        "aspectRatio": aspect_ratio,
+                        "imageSize": resolution
+                    },
+                    "responseModalities": ["IMAGE"]
+                }
+            })
+            
+            print(f"[NakuNode] Sending request to: {base_url}")
+            
+            # Parse the base URL to extract host and path
+            if base_url.startswith("http://"):
+                is_https = False
+                base_url_clean = base_url[7:]
+            elif base_url.startswith("https://"):
+                is_https = True
+                base_url_clean = base_url[8:]
+            else:
+                # Assume https by default
+                is_https = True
+                base_url_clean = base_url
+            
+            # Split host and port if specified
+            if ':' in base_url_clean:
+                host, port = base_url_clean.split(':', 1)
+                port = int(port)
+            else:
+                host = base_url_clean
+                port = 443 if is_https else 80
+            
+            # Create HTTPS or HTTP connection based on the URL scheme
+            if is_https:
+                conn = http.client.HTTPSConnection(host, port, context=ssl.create_default_context(), timeout=300)
+            else:
+                conn = http.client.HTTPConnection(host, port, timeout=300)
+                
+            headers = {
+                'Authorization': f'Bearer {use_api_key}',
+                'Content-Type': 'application/json'
+            }
+            
+            print(f"[NakuNode] Making API request with polling mechanism...")
+
+            # Make the API request - adjust endpoint as needed for the proxy service
+            conn.request("POST", "/v1beta/models/gemini-3-pro-image-preview:generateContent", payload, headers)
+            res = conn.getresponse()
+            initial_response_data = res.read()
+            conn.close()  # Close the initial connection
+
+            print(f"[NakuNode] Initial response received, status: {res.status}")
+
+            # Parse the initial response
+            initial_response_json = json.loads(initial_response_data.decode("utf-8"))
+
+            # Check if the initial response contains a task ID for polling
+            print(f"[NakuNode] Checking initial response for task ID...")
+            print(f"[NakuNode] Initial response keys: {list(initial_response_json.keys())}")
+            
+            if "task_id" in initial_response_json or "taskId" in initial_response_json:
+                # Extract task ID
+                task_id = initial_response_json.get("task_id", initial_response_json.get("taskId"))
+                print(f"[NakuNode] Found task ID: {task_id}")
+                
+                # Poll for the result every 30 seconds up to 300 seconds total
+                import time
+                max_poll_time = 300  # Total time to poll
+                poll_interval = 30   # Interval between polls
+                elapsed_time = 0
+                
+                while elapsed_time < max_poll_time:
+                    print(f"[NakuNode] Polling for task {task_id}, elapsed time: {elapsed_time}/{max_poll_time} seconds")
+                    
+                    # Create a new connection for polling
+                    poll_conn = None
+                    try:
+                        if is_https:
+                            poll_conn = http.client.HTTPSConnection(host, port, context=ssl.create_default_context(), timeout=30)
+                        else:
+                            poll_conn = http.client.HTTPConnection(host, port, timeout=30)
+                        
+                        poll_headers = {
+                            'Authorization': f'Bearer {use_api_key}',
+                            'Content-Type': 'application/json'
+                        }
+                        
+                        # Poll for the task status
+                        poll_endpoint = f"/v1beta/tasks/{task_id}"
+                        print(f"[NakuNode] Polling endpoint: {poll_endpoint}")
+                        poll_conn.request("GET", poll_endpoint, headers=poll_headers)
+                        poll_res = poll_conn.getresponse()
+                        poll_response_data = poll_res.read()
+                        
+                        print(f"[NakuNode] Poll response received, status: {poll_res.status}")
+                        
+                        poll_response_json = json.loads(poll_response_data.decode("utf-8"))
+                        print(f"[NakuNode] Poll response keys: {list(poll_response_json.keys())}")
+                        
+                        # Check if the task is complete
+                        status = poll_response_json.get("status", poll_response_json.get("state", "unknown"))
+                        print(f"[NakuNode] Current task status: {status}")
+                        
+                        if status in ["COMPLETED", "SUCCESS", "success", "completed"]:
+                            response_json = poll_response_json
+                            print("[NakuNode] Task completed successfully")
+                            break
+                        elif status in ["FAILED", "FAILURE", "failed", "failure"]:
+                            # Raise an exception if task failed, to be caught by the outer exception handler
+                            error_detail = poll_response_json.get('error', poll_response_json.get('errorMessage', 'Unknown error'))
+                            raise Exception(f"Task failed: {error_detail}")
+                        else:
+                            print(f"[NakuNode] Task still in progress, status: {status}")
+                            # Continue polling
+                            
+                    except Exception as e:
+                        print(f"[NakuNode] Error during polling: {str(e)}")
+                        # Re-raise the exception to be handled by the outer exception handler
+                        raise e
+                    finally:
+                        if poll_conn:
+                            try:
+                                poll_conn.close()
+                            except:
+                                pass
+                    
+                    # Wait for the next poll
+                    print(f"[NakuNode] Waiting {poll_interval} seconds before next poll...")
+                    time.sleep(poll_interval)
+                    elapsed_time += poll_interval
+                else:
+                    # If we've exceeded the max poll time, raise an exception
+                    raise Exception("Polling timeout: Task did not complete within 300 seconds")
+            else:
+                print("[NakuNode] No task ID found in initial response, using direct response")
+                # If no task ID, use the initial response as the final response
+                response_json = initial_response_json
+            
+            # Check if there's an error in the response
+            if "error" in response_json:
+                error_message = f"[NakuNode] API Error: {response_json['error']['message']}"
+                print(error_message)
+                blank_image = Image.new('RGB', (1024, 1024), color='white')
+                blank_tensor = pil2tensor_naku(blank_image)
+                return (blank_tensor, error_message)
+            
+            # Process the response
+            generated_images = []
+            response_text = json.dumps(response_json, indent=2)  # Return the full response as text
+            
+            # Extract image data from the response
+            if "candidates" in response_json:
+                for candidate in response_json["candidates"]:
+                    if "content" in candidate and "parts" in candidate["content"]:
+                        for part in candidate["content"]["parts"]:
+                            if "inlineData" in part and "mimeType" in part["inlineData"] and part["inlineData"]["mimeType"].startswith("image"):
+                                # Decode the base64 image data
+                                image_data = base64.b64decode(part["inlineData"]["data"])
+                                
+                                # Create PIL Image from the decoded data
+                                pil_image = Image.open(io.BytesIO(image_data))
+                                
+                                # Convert PIL image to tensor
+                                image_tensor = pil2tensor_naku(pil_image)
+                                generated_images.append(image_tensor)
+            
+            # Combine all generated images into a single tensor if any were generated
+            if generated_images:
+                combined_tensor = torch.cat(generated_images, dim=0)
+                result = (combined_tensor, response_text)
+            else:
+                # If no images were generated, return a blank image
+                blank_image = Image.new('RGB', (1024, 1024), color='white')
+                blank_tensor = pil2tensor_naku(blank_image)
+                result = (blank_tensor, f"[NakuNode] No images generated. Response: {response_text}")
+        except socket.timeout:
+            error_message = "[NakuNode] Request timed out. The server took too long to respond (300 seconds)."
+            print(error_message)
+            from PIL import Image
+            blank_image = Image.new('RGB', (1024, 1024), color='white')
+            blank_tensor = pil2tensor_naku(blank_image)
+            result = (blank_tensor, error_message)
+        except http.client.RemoteDisconnected:
+            error_message = "[NakuNode] Connection was closed by the remote server."
+            print(error_message)
+            from PIL import Image
+            blank_image = Image.new('RGB', (1024, 1024), color='white')
+            blank_tensor = pil2tensor_naku(blank_image)
+            result = (blank_tensor, error_message)
+        except Exception as e:
+            error_message = f"[NakuNode] Error in image generation: {str(e)}"
+            print(error_message)
+            from PIL import Image
+            blank_image = Image.new('RGB', (1024, 1024), color='white')
+            blank_tensor = pil2tensor_naku(blank_image)
+            result = (blank_tensor, error_message)
+        finally:
+            # Ensure connection is closed even if an exception occurs
+            if conn is not None:
+                try:
+                    conn.close()
+                except:
+                    pass  # Ignore errors when closing the connection
+        
+        return result
+
+
 class NakuNodeAPI_GeminiTextOnly:
     @classmethod
     def INPUT_TYPES(cls):
@@ -5796,6 +6121,7 @@ NODE_CLASS_MAPPINGS = {
     "NakuNodeAPI_nano_banana": NakuNodeAPI_nano_banana,
     "NakuNodeAPI_nano_banana_edit": NakuNodeAPI_nano_banana_edit,
     "NakuNodeAPI_nano_banana2_edit": NakuNodeAPI_nano_banana2_edit,
+    "NakuNodeAPI_Gemini3Pro_Image": NakuNodeAPI_Gemini3Pro_Image,
     "NakuNodeAPI_GeminiTextOnly": NakuNodeAPI_GeminiTextOnly,
 
     # Kling Nodes
@@ -5836,6 +6162,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "NakuNodeAPI_nano_banana": "NakuNodeAPI nano_banana",
     "NakuNodeAPI_nano_banana_edit": "NakuNodeAPI nano_banana_edit",
     "NakuNodeAPI_nano_banana2_edit": "NakuNodeAPI nano_banana2_edit",
+    "NakuNodeAPI_Gemini3Pro_Image": "NakuNodeAPI Gemini 3 Pro Image",
     "NakuNodeAPI_GeminiTextOnly": "NakuNodeAPI Gemini Text Only",
 
     # Kling Nodes
@@ -5979,6 +6306,7 @@ NODE_CLASS_MAPPINGS = {
     "NakuNodeAPI_nano_banana": NakuNodeAPI_nano_banana,
     "NakuNodeAPI_nano_banana_edit": NakuNodeAPI_nano_banana_edit,
     "NakuNodeAPI_nano_banana2_edit": NakuNodeAPI_nano_banana2_edit,
+    "NakuNodeAPI_Gemini3Pro_Image": NakuNodeAPI_Gemini3Pro_Image,
     "NakuNodeAPI_GeminiTextOnly": NakuNodeAPI_GeminiTextOnly,
 
     # Kling Nodes
@@ -6023,6 +6351,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "NakuNodeAPI_nano_banana": "NakuNodeAPI nano_banana",
     "NakuNodeAPI_nano_banana_edit": "NakuNodeAPI nano_banana_edit",
     "NakuNodeAPI_nano_banana2_edit": "NakuNodeAPI nano_banana2_edit",
+    "NakuNodeAPI_Gemini3Pro_Image": "NakuNodeAPI Gemini 3 Pro Image",
     "NakuNodeAPI_GeminiTextOnly": "NakuNodeAPI Gemini Text Only",
 
     # Kling Nodes
