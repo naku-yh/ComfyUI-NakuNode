@@ -236,3 +236,13 @@ class NakuNode_VideoSave:
             "ui": {"naku_output": [{"filename": file_name, "subfolder": subfolder, "type": "output"}]},
             "result": (file_name,)
         }
+
+
+# 节点映射
+NODE_CLASS_MAPPINGS = {
+    "NakuNode_VideoSave": NakuNode_VideoSave
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "NakuNode_VideoSave": "NakuNode_视频保存"
+}
