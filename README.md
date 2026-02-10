@@ -1,6 +1,6 @@
 # ComfyUI-NakuNode
 
-**NakuNode V3.0** ---  NakuNode is build by Naku. It can make your work more easier.
+**NakuNode V3.1** ---  NakuNode is build by Naku. It can make your work more easier.
 
 ## 介绍
 
@@ -80,6 +80,19 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 - 适用于Lora提示词筛选器
 - 支持格式：序号【模型名称】/模型提示词
 
+#### NakuNode_MultiText
+- 一个多功能文本节点，具有三个独立的文本框输入
+- 提供三个对应的文本输出接口
+- 包含"合并文本"选项，当启用时将三个文本框内容以换行符分隔合并到第一个输出接口
+- 当禁用合并选项时，各文本框内容分别输出到对应接口
+
+#### NakuNode_图片拼接
+- 支持根据模板拼接最多6张图片，具有多种自定义选项
+- 提供场景图拼接和角色图拼接两种模板
+- 支持横向拼接、竖向拼接和2x3网格拼接三种布局方式
+- 可自定义长边像素、边框宽度、边框颜色和输出格式
+- 为每张图片自动添加中文标签，便于识别不同视角的图像
+
 ### 5. 工具节点
 
 #### NakuNode_常用尺寸
@@ -117,6 +130,14 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 ## 使用方法
 
 所有节点都可以在 ComfyUI 的节点菜单中找到，位于 "NakuNodes" 类别下。Flux2相关节点位于 "Flux2" 类别下。
+
+## 更新日志
+
+### V3.1
+- 新增 NakuNode_MultiText 节点：多文本节点，具有三个文本框和三个输出接口，支持合并文本功能
+- 新增 NakuNode_图片拼接 节点：支持根据模板拼接最多6张图片，具有多种自定义选项
+- 优化了模块导入机制，修复了相对导入问题
+- 改进了节点分类，所有新节点归类到 NakuNodes/Utils 类别
 
 ## 鸣谢
 

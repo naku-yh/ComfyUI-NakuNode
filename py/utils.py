@@ -1127,6 +1127,465 @@ class NakuNode_图像组合:
         return combined_img
 
 
+class NakuNode_MultiText:
+    """
+    一个多文本节点，具有三个文本框和三个文本输出接口
+    当合并文本选项为True时，将三个文本框的内容合并输出到第一个输出接口
+    """
+    
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "text1": ("STRING", {"multiline": True, "default": "输入文本1\n\n\n\n", "placeholder": "输入文本1", "dynamicPrompts": True}),
+                "text2": ("STRING", {"multiline": True, "default": "输入文本2\n\n\n\n", "placeholder": "输入文本2", "dynamicPrompts": True}),
+                "text3": ("STRING", {"multiline": True, "default": "输入文本3\n\n\n\n", "placeholder": "输入文本3", "dynamicPrompts": True}),
+                "合并文本": ("BOOLEAN", {"default": False, "label_on": "开启", "label_off": "关闭"}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING", "STRING", "STRING")
+    RETURN_NAMES = ("text1_output", "text2_output", "text3_output")
+    FUNCTION = "process_texts"
+    CATEGORY = CATEGORY_TYPE
+
+    def process_texts(self, text1, text2, text3, 合并文本):
+        if 合并文本:
+            # 如果启用合并文本，则将三个文本框的内容以换行形式合并到第一个输出
+            merged_text = "\n".join(filter(None, [text1, text2, text3]))
+            return (merged_text, "", "")
+        else:
+            # 如果不启用合并，则分别输出到对应的输出接口
+            return (text1, text2, text3)
+
+
+class NakuNodeAssetsCombine:
+    """
+    图片拼接节点
+    支持根据模板拼接最多6张图片，具有多种自定义选项
+    """
+
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                # 拼接模板选择
+                "template_type": (["场景图拼接", "角色图拼接"], {"default": "场景图拼接"}),
+                # 拼接方向
+                "direction": (["横向拼接", "竖向拼接", "2x3网格拼接"], {"default": "横向拼接"}),
+                # 长边像素
+                "long_side_pixels": ("INT", {"default": 1024, "min": 512, "max": 4096}),
+                # 边框宽度
+                "border_width": ("INT", {"default": 30, "min": 20, "max": 100}),
+                # 边框颜色
+                "border_color": (["黑色", "白色", "红色", "黄色", "蓝色"], {"default": "黑色"}),
+                # 输出格式
+                "output_format": (["png", "JPEG"], {"default": "png"}),
+            },
+            "optional": {
+                # 最多6张图片输入
+                "image_front": ("IMAGE",),
+                "image_left": ("IMAGE",),
+                "image_right": ("IMAGE",),
+                "image_high_angle": ("IMAGE",),
+                "image_detail_1": ("IMAGE",),
+                "image_detail_2": ("IMAGE",),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("拼接结果",)
+    FUNCTION = "combine_images"
+    CATEGORY = CATEGORY_TYPE
+
+    def get_system_font(self, font_size):
+        """获取系统支持中文的字体"""
+        import platform
+        system = platform.system()
+
+        # 尝试多种字体，按照优先级顺序
+        font_paths = []
+
+        if system == "Darwin":  # macOS
+            font_paths = [
+                "/System/Library/Fonts/PingFang.ttc",  # 苹方
+                "/System/Library/Fonts/Helvetica.ttc",  # Helvetica
+                "/System/Library/Fonts/STHeiti Light.ttc",  # 华文黑体
+                "/System/Library/Fonts/STSong.ttc",  # 华文宋体
+                "/System/Library/Fonts/Songti.ttc",  # 宋体
+                "/System/Library/Fonts/Hiragino Sans GB.ttc",  # 冬青黑体简
+                "Arial Unicode.ttf",  # Arial Unicode
+            ]
+        elif system == "Windows":
+            font_paths = [
+                "C:/Windows/Fonts/msyh.ttc",  # 微软雅黑
+                "C:/Windows/Fonts/msyhbd.ttc",  # 微软雅黑粗体
+                "C:/Windows/Fonts/simsun.ttc",  # 宋体
+                "C:/Windows/Fonts/simhei.ttf",  # 黑体
+                "C:/Windows/Fonts/msjh.ttc",  # 微软正黑
+                "C:/Windows/Fonts/calibri.ttf",  # Calibri
+                "C:/Windows/Fonts/arial.ttf",  # Arial
+                "C:/Windows/Fonts/Arial.ttf",  # Arial (大写)
+            ]
+        else:  # Linux
+            font_paths = [
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # DejaVu Sans
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",  # Liberation Sans
+                "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",  # 文泉驿微米黑
+                "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",  # Noto CJK
+                "/usr/share/fonts/truetype/noto-cjk/NotoSansCJK-Bold.ttc",  # Noto CJK Bold
+                "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",  # Noto CJK Bold
+                "/usr/share/fonts/TTF/DejaVuSans.ttf",  # DejaVu Sans (alternative path)
+            ]
+
+        # 尝试加载字体
+        for font_path in font_paths:
+            try:
+                return ImageFont.truetype(font_path, font_size)
+            except:
+                continue
+
+        # 如果都没有找到，返回默认字体
+        return ImageFont.load_default()
+
+    def combine_images(self, template_type, direction, long_side_pixels, border_width, border_color, output_format,
+                      image_front=None, image_left=None, image_right=None,
+                      image_high_angle=None, image_detail_1=None, image_detail_2=None):
+
+        # 将颜色名称转换为RGB值
+        color_map = {
+            "黑色": (0, 0, 0),
+            "白色": (255, 255, 255),
+            "红色": (255, 0, 0),
+            "黄色": (255, 255, 0),
+            "蓝色": (0, 0, 255)
+        }
+
+        border_rgb = color_map.get(border_color, (0, 0, 0))
+
+        # 获取所有输入的图片
+        input_images = []
+        # 使用固定中文标签
+        labels = [
+            "正面视角 Front View",
+            "左侧视角 Left Side View",
+            "右侧视角 Right Side View",
+            "高角度 High Angle Shot",
+            "细节图1 Detail01",
+            "细节图2 Detail02"
+        ]
+
+        image_inputs = [image_front, image_left, image_right, image_high_angle, image_detail_1, image_detail_2]
+
+        for img_tensor in image_inputs:
+            if img_tensor is not None:
+                # 将PyTorch张量转换为PIL图像
+                i = 255. * img_tensor.cpu().numpy().squeeze()
+                img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
+                input_images.append(img)
+            else:
+                input_images.append(None)
+
+        # 过滤掉None图片
+        valid_images = [(img, label) for img, label in zip(input_images, labels) if img is not None]
+
+        if not valid_images:
+            raise ValueError("至少需要一张输入图片")
+
+        # 计算拼接布局
+        if direction == "横向拼接":
+            combined_img = self._horizontal_layout(valid_images, border_width, border_rgb, long_side_pixels)
+        elif direction == "竖向拼接":
+            combined_img = self._vertical_layout(valid_images, border_width, border_rgb, long_side_pixels)
+        else:  # 2x3网格拼接
+            # 即使图片数量不足6张，也要执行网格布局，缺少的图片用空白或复制现有图片填充
+            combined_img = self._grid_layout(valid_images, border_width, border_rgb, long_side_pixels)
+
+        # 将PIL图像转换回PyTorch张量
+        combined_tensor = torch.from_numpy(np.array(combined_img).astype(np.float32) / 255.0).unsqueeze(0)
+
+        return (combined_tensor,)
+
+    def _horizontal_layout(self, valid_images, border_width, border_rgb, long_side_pixels):
+        """横向拼接布局 - 只在图片上方和图片间添加边框"""
+        total_images = len(valid_images)
+
+        # 缩放所有图片，使每张图片的长边等于指定像素
+        resized_images = []
+        for (img, label) in valid_images:
+            # 获取原始尺寸
+            orig_width, orig_height = img.size
+            # 计算缩放比例
+            if orig_width > orig_height:
+                # 宽大于高，以宽度为准
+                scale_factor = long_side_pixels / orig_width
+                new_width = long_side_pixels
+                new_height = int(orig_height * scale_factor)
+            else:
+                # 高大于等于宽，以高度为准
+                scale_factor = long_side_pixels / orig_height
+                new_height = long_side_pixels
+                new_width = int(orig_width * scale_factor)
+
+            # 缩放图片
+            resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            resized_images.append((resized_img, label))
+
+        # 计算最终画布尺寸
+        total_width = sum(img.size[0] for img, _ in resized_images) + (len(resized_images) - 1) * (border_width // 2)
+        total_height = max(img.size[1] for img, _ in resized_images) + border_width
+
+        # 创建画布 - 使用边框颜色作为背景色，避免白色边框
+        canvas = Image.new('RGB', (total_width, total_height), border_rgb)
+
+        # 粘贴图片并添加标签
+        x_offset = 0
+        font_size = max(12, border_width // 2)
+
+        # 加载支持中文的字体
+        font = self.get_system_font(font_size)
+
+        # 计算反色
+        text_rgb = tuple(255 - c for c in border_rgb)
+
+        for i, (img, label) in enumerate(resized_images):
+            # 在图片上方绘制边框区域
+            draw = ImageDraw.Draw(canvas)
+
+            # 绘制图片上方的标签区域
+            label_area = [x_offset, 0, x_offset + img.size[0], border_width]
+            draw.rectangle(label_area, fill=border_rgb)
+
+            # 添加标签文本，居左对齐
+            text_x = x_offset + 5  # 左边距5像素
+            text_y = (border_width - font_size) // 2
+
+            # 使用更好的文本渲染方法
+            try:
+                draw.text((text_x, text_y), label, fill=text_rgb, font=font)
+            except UnicodeEncodeError:
+                # 如果遇到编码错误，尝试使用ASCII字符
+                safe_label = label.encode('utf-8', errors='ignore').decode('utf-8')
+                draw.text((text_x, text_y), safe_label, fill=text_rgb, font=font)
+
+            # 粘贴图片
+            canvas.paste(img, (x_offset, border_width))
+
+            # 如果不是最后一张图片，在图片右侧添加分隔边框
+            x_offset += img.size[0]
+            if i < len(resized_images) - 1:  # 不是最后一张图片
+                # 分隔边框宽度为设定值的50%
+                separator_width = border_width // 2
+                # 只在图片上方区域添加分隔线
+                separator_area = [x_offset, 0, x_offset + separator_width, border_width]
+                draw.rectangle(separator_area, fill=border_rgb)
+
+                x_offset += separator_width
+
+        return canvas
+
+    def _vertical_layout(self, valid_images, border_width, border_rgb, long_side_pixels):
+        """竖向拼接布局 - 只在图片上方添加边框"""
+        total_images = len(valid_images)
+
+        # 缩放所有图片，使每张图片的长边等于指定像素
+        resized_images = []
+        for (img, label) in valid_images:
+            # 获取原始尺寸
+            orig_width, orig_height = img.size
+            # 计算缩放比例
+            if orig_width > orig_height:
+                # 宽大于高，以宽度为准
+                scale_factor = long_side_pixels / orig_width
+                new_width = long_side_pixels
+                new_height = int(orig_height * scale_factor)
+            else:
+                # 高大于等于宽，以高度为准
+                scale_factor = long_side_pixels / orig_height
+                new_height = long_side_pixels
+                new_width = int(orig_width * scale_factor)
+
+            # 缩放图片
+            resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            resized_images.append((resized_img, label))
+
+        # 计算最终画布尺寸
+        total_width = max(img.size[0] for img, _ in resized_images)
+        total_height = sum(img.size[1] for img, _ in resized_images) + len(resized_images) * border_width + (len(resized_images) - 1) * (border_width // 2)
+
+        # 创建画布 - 使用边框颜色作为背景色，避免白色边框
+        canvas = Image.new('RGB', (total_width, total_height), border_rgb)
+
+        # 粘贴图片并添加标签
+        y_offset = 0
+        font_size = max(12, border_width // 2)
+
+        # 加载支持中文的字体
+        font = self.get_system_font(font_size)
+
+        # 计算反色
+        text_rgb = tuple(255 - c for c in border_rgb)
+
+        for i, (img, label) in enumerate(resized_images):
+            # 在图片上方绘制边框区域
+            draw = ImageDraw.Draw(canvas)
+
+            # 绘制图片上方的标签区域
+            label_area = [0, y_offset, total_width, y_offset + border_width]
+            draw.rectangle(label_area, fill=border_rgb)
+
+            # 添加标签文本，居左对齐
+            text_x = 5  # 左边距5像素
+            text_y = y_offset + (border_width - font_size) // 2
+
+            # 使用更好的文本渲染方法
+            try:
+                draw.text((text_x, text_y), label, fill=text_rgb, font=font)
+            except UnicodeEncodeError:
+                # 如果遇到编码错误，尝试使用ASCII字符
+                safe_label = label.encode('utf-8', errors='ignore').decode('utf-8')
+                draw.text((text_x, text_y), safe_label, fill=text_rgb, font=font)
+
+            # 粘贴图片
+            canvas.paste(img, (0, y_offset + border_width))
+
+            # 更新y偏移量
+            y_offset += border_width + img.size[1]
+
+            # 如果不是最后一张图片，在图片下方添加分隔边框
+            if i < len(resized_images) - 1:  # 不是最后一张图片
+                # 分隔边框宽度为设定值的50%
+                separator_height = border_width // 2
+                # 只在标签区域添加分隔线
+                separator_area = [0, y_offset, total_width, y_offset + separator_height]
+                draw.rectangle(separator_area, fill=border_rgb)
+
+                y_offset += separator_height
+
+        return canvas
+
+    def _grid_layout(self, valid_images, border_width, border_rgb, long_side_pixels):
+        """2x3网格拼接布局 - 四周统一有边框"""
+        # 如果图片数量不足6张，用空白图片填充
+        num_images = len(valid_images)
+        if num_images < 6:
+            # 创建一个空白图片用于填充
+            if num_images > 0:
+                first_img = valid_images[0][0]  # 使用第一张图片的尺寸作为参考
+                blank_img = Image.new('RGB', first_img.size, (200, 200, 200))  # 灰色背景，与实际图片相同尺寸
+            else:
+                # 如果没有有效图片，创建一个默认大小的空白图片
+                blank_img = Image.new('RGB', (long_side_pixels, long_side_pixels), (200, 200, 200))
+            blank_label = "空位"
+
+            # 用现有图片或空白图片填充到6张
+            filled_valid_images = valid_images[:]
+            for i in range(6 - num_images):
+                filled_valid_images.append((blank_img, blank_label))
+        else:
+            filled_valid_images = valid_images[:6]  # 只取前6张
+
+        # 缩放所有图片，使每张图片的长边等于指定像素
+        resized_images = []
+        for (img, label) in filled_valid_images:
+            # 获取原始尺寸
+            orig_width, orig_height = img.size
+            # 计算缩放比例
+            if orig_width > orig_height:
+                # 宽大于高，以宽度为准
+                scale_factor = long_side_pixels / orig_width
+                new_width = long_side_pixels
+                new_height = int(orig_height * scale_factor)
+            else:
+                # 高大于等于宽，以高度为准
+                scale_factor = long_side_pixels / orig_height
+                new_height = long_side_pixels
+                new_width = int(orig_width * scale_factor)
+
+            # 缩放图片
+            resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            resized_images.append((resized_img, label))
+
+        # 计算网格布局尺寸
+        # 2列3行 - 计算每列和每行的最大尺寸
+        col1_width = max(resized_images[i][0].size[0] for i in [0, 2, 4])  # 第一列的最大宽度
+        col2_width = max(resized_images[i][0].size[0] for i in [1, 3, 5])  # 第二列的最大宽度
+        row1_height = resized_images[0][0].size[1]  # 第一行的高度
+        row2_height = resized_images[2][0].size[1]  # 第二行的高度
+        row3_height = resized_images[4][0].size[1]  # 第三行的高度
+
+        # 计算最终画布尺寸
+        # 总宽度 = 左边框 + 第一列 + 中间边框 + 第二列 + 右边框
+        total_width = border_width + col1_width + border_width + col2_width + border_width
+        # 总高度 = 上边框 + 第一行 + 行间边框 + 第二行 + 行间边框 + 第三行 + 下边框
+        total_height = border_width + row1_height + border_width + row2_height + border_width + row3_height + border_width
+
+        # 创建画布 - 使用边框颜色
+        canvas = Image.new('RGB', (total_width, total_height), border_rgb)
+
+        font_size = max(12, border_width // 2)
+
+        # 加载支持中文的字体
+        font = self.get_system_font(font_size)
+
+        # 计算反色
+        text_rgb = tuple(255 - c for c in border_rgb)
+
+        # 定义位置：2列3行，确保边框宽度一致
+        # 每个单元格的标签区域位于图片上方，高度为border_width
+        positions = [
+            (border_width, border_width),  # 第1张 - 左上 [0] - (左边框, 上边框)
+            (border_width + col1_width + border_width, border_width),  # 第2张 - 右上 [1] - (左边框+第一列+中间边框, 上边框)
+            (border_width, border_width + row1_height + border_width), # 第3张 - 左中 [2] - (左边框, 上边框+第一行+行间边框)
+            (border_width + col1_width + border_width, border_width + row1_height + border_width), # 第4张 - 右中 [3] - (左边框+第一列+中间边框, 上边框+第一行+行间边框)
+            (border_width, border_width + row1_height + border_width + row2_height + border_width), # 第5张 - 左下 [4] - (左边框, 上边框+第一行+行间边框+第二行+行间边框)
+            (border_width + col1_width + border_width, border_width + row1_height + border_width + row2_height + border_width) # 第6张 - 右下 [5] - (左边框+第一列+中间边框, 上边框+第一行+行间边框+第二行+行间边框)
+        ]
+
+        # 绘制每个单元格
+        for i in range(6):
+            img, label = resized_images[i]
+            pos_x, pos_y = positions[i]
+
+            # 绘制标签区域（整个单元格的顶部边框区域）
+            draw = ImageDraw.Draw(canvas)
+
+            # 标签区域的坐标
+            cell_width = col1_width if i % 2 == 0 else col2_width
+            cell_height = row1_height if i < 2 else (row2_height if i < 4 else row3_height)
+
+            # 标签区域：在图片上方绘制边框色块
+            label_area = [pos_x, pos_y, pos_x + cell_width, pos_y + border_width]
+            draw.rectangle(label_area, fill=border_rgb)
+
+            # 添加标签文本，居左对齐
+            text_x = pos_x + 5  # 左边距5像素
+            text_y = pos_y + (border_width - font_size) // 2
+
+            # 使用更好的文本渲染方法
+            try:
+                draw.text((text_x, text_y), label, fill=text_rgb, font=font)
+            except UnicodeEncodeError:
+                # 如果遇到编码错误，尝试使用ASCII字符
+                safe_label = label.encode('utf-8', errors='ignore').decode('utf-8')
+                draw.text((text_x, text_y), safe_label, fill=text_rgb, font=font)
+
+            # 粘贴图片
+            canvas.paste(img, (pos_x, pos_y + border_width))
+
+        # 确保底部边框存在 - 在最下方添加一行边框
+        # 实际上，由于画布高度已经包含了底部边框，所以底部边框应该自然存在
+        # 如果仍有问题，我们可以明确绘制底部边框
+        draw = ImageDraw.Draw(canvas)
+        bottom_border_area = [0, total_height - border_width, total_width, total_height]
+        draw.rectangle(bottom_border_area, fill=border_rgb)
+
+        return canvas
+
+
 # 合并所有节点映射
 NODE_CLASS_MAPPINGS = {
     "NakuNode_SaveImage": NakuNode_SaveImage,
@@ -1140,6 +1599,8 @@ NODE_CLASS_MAPPINGS = {
     "NakuNode_动态文本拆分与选择": NakuNode_动态文本拆分与选择,
     "NakuNode_故事板输出": NakuNode_故事板输出,
     "NakuNode_图像组合": NakuNode_图像组合,
+    "NakuNode_MultiText": NakuNode_MultiText,
+    "NakuNodeAssetsCombine": NakuNodeAssetsCombine,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -1153,4 +1614,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "NakuNode_动态文本拆分与选择": "NakuNode_动态文本拆分与选择",
     "NakuNode_故事板输出": "NakuNode_故事板输出",
     "NakuNode_图像组合": "NakuNode_图像组合",
+    "NakuNode_MultiText": "NakuNode_MultiText",
+    "NakuNodeAssetsCombine": "NakuNode_图片拼接",
 }
