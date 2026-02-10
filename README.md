@@ -1,6 +1,6 @@
 # ComfyUI-NakuNode
 
-**NakuNode V3.1** ---  NakuNode is build by Naku. It can make your work more easier.
+**NakuNode V3.2** ---  NakuNode is build by Naku. It can make your work more easier.
 
 ## 介绍
 
@@ -110,7 +110,19 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 - 支持多种AI服务（Google Veo3, Gemini, Kling, Midjourney, Sora2, Vidu等）
 - 除了使用Comfly的api地址外，使用"IP"即可填写任意API节点
 
-### 7. Flux2节点
+### 7. 视频处理节点
+
+#### NakuNode_VideoSave
+- 视频保存节点，将图像序列保存为视频文件
+- 支持多种视频格式：H.264 MP4、H.265 MP4、ProRes 422 MOV、ProRes 422 LT MOV、WebM、GIF
+- 默认帧率设置为25 FPS
+- 支持8bit和10bit色深选择
+- ProRes格式默认使用10bit色深以获得最佳质量
+- 支持音频轨道合并
+- 支持元数据嵌入（保留工作流信息和提示词）
+- 提供视频预览功能，支持播放、暂停和下载
+
+### 8. Flux2节点
 
 #### NakuNode Flux2 Image Reference
 - 专为Flux2模型设计的图像参考节点
@@ -138,6 +150,13 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 - 新增 NakuNode_图片拼接 节点：支持根据模板拼接最多6张图片，具有多种自定义选项
 - 优化了模块导入机制，修复了相对导入问题
 - 改进了节点分类，所有新节点归类到 NakuNodes/Utils 类别
+
+### V3.2
+- 新增 NakuNode_VideoSave 节点：视频保存节点，支持多种视频格式（H.264/H.265/ProRes422/ProRes422LT/WebM/GIF）
+- 支持8bit/10bit色深选择，ProRes格式默认使用10bit
+- 默认帧率调整为25 FPS
+- 支持音频轨道合并和元数据嵌入
+- 提供视频预览功能
 
 ## 鸣谢
 

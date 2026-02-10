@@ -1603,6 +1603,13 @@ NODE_CLASS_MAPPINGS = {
     "NakuNodeAssetsCombine": NakuNodeAssetsCombine,
 }
 
+# 导入视频保存节点
+try:
+    from .video_save import NakuNode_VideoSave
+    NODE_CLASS_MAPPINGS["NakuNode_VideoSave"] = NakuNode_VideoSave
+except ImportError as e:
+    print(f"Warning: Could not import NakuNode_VideoSave: {e}")
+
 NODE_DISPLAY_NAME_MAPPINGS = {
     "NakuNode_常用尺寸": "NakuNode_常用尺寸",
     "NakuNode_图像边框": "NakuNode_图像边框",
@@ -1616,4 +1623,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "NakuNode_图像组合": "NakuNode_图像组合",
     "NakuNode_MultiText": "NakuNode_MultiText",
     "NakuNodeAssetsCombine": "NakuNode_图片拼接",
+    "NakuNode_VideoSave": "NakuNode_视频保存",
 }

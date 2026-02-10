@@ -3,3 +3,5 @@ transparent-background
 Pillow
 torch
 numpy
+imageio-ffmpeg
+soundfile

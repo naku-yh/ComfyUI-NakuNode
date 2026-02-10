@@ -22,6 +22,7 @@ print("  - NakuNode_MultiText: 多文本节点，具有三个文本框和三个�
 print("  - NakuNode_图片拼接: 支持根据模板拼接最多6张图片，具有多种自定义选项")
 print("  - NakuNode_故事板输出: 故事板输出节点，将多个图像组合成网格布局")
 print("  - NakuNode_图像组合: 图像组合节点，将两张图像按横向或纵向排列组合")
+print("  - NakuNode_VideoSave: 视频保存节点，将图像序列保存为视频文件，支持多种格式(h264/h265/ProRes422/ProRes422LT/GIF/WebM)")
 print("  - API节点: 基于Comfly重新编译的API节点，支持多种AI服务")
 print("  - Flux2节点: 专为Flux2模型设计的图像参考节点")
 
