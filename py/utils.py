@@ -1268,14 +1268,14 @@ class NakuNodeAssetsCombine:
 
         # 获取所有输入的图片
         input_images = []
-        # 使用固定中文标签
+        # Using fixed English labels
         labels = [
-            "正面视角 Front View",
-            "左侧视角 Left Side View",
-            "右侧视角 Right Side View",
-            "高角度 High Angle Shot",
-            "细节图1 Detail01",
-            "细节图2 Detail02"
+            "Front View",
+            "Left Side View", 
+            "Right Side View",
+            "High Angle Shot",
+            "Detail01",
+            "Detail02"
         ]
 
         image_inputs = [image_front, image_left, image_right, image_high_angle, image_detail_1, image_detail_2]
