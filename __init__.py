@@ -5,10 +5,10 @@ import sys
 import json
 
 # Print version information when loading
-print("\033[92mNakuNode V3.1\033[0m \033[93m---\033[0m \033[1;37mNakuNode is build by Naku.\033[0m It can make your work more easier.")
+print("\033[92mNakuNode V3.3\033[0m \033[93m---\033[0m \033[1;37mNakuNode is build by Naku.\033[0m It can make your work more easier.")
 
 # List of all nodes and their functions
-print("NakuNode V3.1 包含以下节点:")
+print("NakuNode V3.3 包含以下节点:")
 print("  - NakuNode_SaveImage: 保存图像，支持自定义文件名前缀、路径、格式和质量设置")
 print("  - NakuNode_常用尺寸: 提供常用的图像尺寸比例和画面模式选择")
 print("  - NakuNode_图像边框: 为图像添加指定颜色和宽度的边框")
@@ -19,11 +19,12 @@ print("  - NakuNode_简易画板: 简易画板节点，支持自由绘制")
 print("  - NakuNode_文本选择器: 文本选择器节点，支持从文本选项列表中选择")
 print("  - NakuNode_动态文本拆分与选择: 动态文本拆分与选择节点，适用于Lora提示词筛选器")
 print("  - NakuNode_MultiText: 多文本节点，具有三个文本框和三个输出接口，支持合并文本功能")
-print("  - NakuNode_图片拼接: 支持根据模板拼接最多6张图片，具有多种自定义选项")
+print("  - NakuNode_图片拼接: 支持根据模板拼接最多9张图片，具有多种自定义选项，新增3x3网格模式")
 print("  - NakuNode_故事板输出: 故事板输出节点，将多个图像组合成网格布局")
 print("  - NakuNode_图像组合: 图像组合节点，将两张图像按横向或纵向排列组合")
 print("  - NakuNode_VideoSave: 视频保存节点，将图像序列保存为视频文件，支持多种格式(h264/h265/ProRes422/ProRes422LT/GIF/WebM)")
-print("  - API节点: 基于Comfly重新编译的API节点，支持多种AI服务")
+print("  - NakuNode_ImageSplit: 图像分割节点，可将单张图像按指定行列数切割成多个子图像")
+print("  - API节点: 基于Comfly重新编译的API节点，支持多种AI services")
 print("  - Flux2节点: 专为Flux2模型设计的图像参考节点")
 
 NODE_CLASS_MAPPINGS = {}
@@ -97,6 +98,7 @@ for file in files:
         import traceback
         traceback.print_exc()
         pass
+
 
 # Load API nodes
 try:

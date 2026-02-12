@@ -730,6 +730,104 @@ class NakuNode_文本选择器:
 
 
 # --------------------------------------------------------------------------------
+# 节点: NakuNode_ImageSplit
+# --------------------------------------------------------------------------------
+class NakuNode_ImageSplit:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "图像": ("IMAGE",),
+                "行数": ("INT", {"default": 3, "min": 1, "max": 20, "step": 1}),
+                "列数": ("INT", {"default": 3, "min": 1, "max": 20, "step": 1}),
+                "切片比例": (["16:9", "9:16", "1:1", "4:3", "3:4"], {"default": "16:9"}),
+                "收缩像素": ("INT", {"default": 40, "min": 0, "max": 200, "step": 1}),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE", "INT", "INT")
+    RETURN_NAMES = ("切片图像", "行数", "列数")
+    OUTPUT_IS_LIST = (True, False, False)
+    FUNCTION = "split_image"
+    CATEGORY = "NakuNodes/Utils"
+
+    def split_image(self, 图像, 行数, 列数, 切片比例, 收缩像素=40):
+        # 将张量图像转换为PIL图像
+        i = 255.0 * 图像[0].cpu().numpy()
+        img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
+
+        # 将宽高比字符串转换为浮点数
+        if 切片比例 == "16:9":
+            tile_ratio = 16 / 9  # 约1.7777
+        elif 切片比例 == "9:16":
+            tile_ratio = 9 / 16  # 0.5625
+        elif 切片比例 == "1:1":
+            tile_ratio = 1 / 1  # 正方形 1.0
+        elif 切片比例 == "4:3":
+            tile_ratio = 4 / 3  # 约1.3333
+        elif 切片比例 == "3:4":
+            tile_ratio = 3 / 4  # 0.75
+        else:
+            tile_ratio = 1  # 默认为正方形
+
+        # 计算裁剪尺寸
+        img_w, img_h = img.size
+        total_ratio = (列数 / 行数) * tile_ratio
+        img_ratio = img_w / img_h
+
+        if img_ratio > total_ratio:  # 原图太宽，切左右
+            render_h = img_h
+            render_w = render_h * total_ratio
+            offset_x = (img_w - render_w) / 2
+            offset_y = 0
+        else:  # 原图太高，切上下
+            render_w = img_w
+            render_h = render_w / total_ratio
+            offset_x = 0
+            offset_y = (img_h - render_h) / 2
+
+        tile_w = render_w / 列数
+        tile_h = render_h / 行数
+
+        tiles = []
+        for r in range(行数):
+            for c in range(列数):
+                # 裁剪切片
+                left = offset_x + c * tile_w
+                top = offset_y + r * tile_h
+                right = left + tile_w
+                bottom = top + tile_h
+
+                # 应用像素收缩
+                left += 收缩像素
+                top += 收缩像素
+                right -= 收缩像素
+                bottom -= 收缩像素
+
+                # 确保边界有效
+                left = max(0, left)
+                top = max(0, top)
+                right = min(img_w, right)
+                bottom = min(img_h, bottom)
+
+                # 如果裁剪区域无效则跳过
+                if left >= right or top >= bottom:
+                    print(f"NakuNode: 跳过无效的裁剪区域，切片({r},{c}): left={left}, top={top}, right={right}, bottom={bottom}, 收缩像素={收缩像素}")
+                    continue
+
+                cropped_tile = img.crop((left, top, right, bottom))
+
+                # 转换回张量
+                cropped_tile_np = np.array(cropped_tile).astype(np.float32) / 255.0
+                cropped_tile_tensor = torch.from_numpy(cropped_tile_np)[None,]
+                tiles.append(cropped_tile_tensor)
+
+        print(f"NakuNode: 生成了 {len(tiles)} 个切片, 行数={行数}, 列数={列数}, 收缩像素={收缩像素}")
+
+        return (tiles, 行数, 列数)
+
+
+# --------------------------------------------------------------------------------
 # 节点: NakuNode_动态文本拆分与选择
 # --------------------------------------------------------------------------------
 class NakuNode_动态文本拆分与选择:
@@ -1162,7 +1260,7 @@ class NakuNode_MultiText:
 class NakuNodeAssetsCombine:
     """
     图片拼接节点
-    支持根据模板拼接最多6张图片，具有多种自定义选项
+    支持根据模板拼接最多9张图片，具有多种自定义选项
     """
 
     def __init__(self):
@@ -1175,7 +1273,7 @@ class NakuNodeAssetsCombine:
                 # 拼接模板选择
                 "template_type": (["场景图拼接", "角色图拼接"], {"default": "场景图拼接"}),
                 # 拼接方向
-                "direction": (["横向拼接", "竖向拼接", "2x3网格拼接"], {"default": "横向拼接"}),
+                "direction": (["横向拼接", "竖向拼接", "2x3网格拼接", "3x3网格拼接"], {"default": "横向拼接"}),
                 # 长边像素
                 "long_side_pixels": ("INT", {"default": 1024, "min": 512, "max": 4096}),
                 # 边框宽度
@@ -1186,11 +1284,14 @@ class NakuNodeAssetsCombine:
                 "output_format": (["png", "JPEG"], {"default": "png"}),
             },
             "optional": {
-                # 最多6张图片输入
+                # 最多9张图片输入
                 "image_front": ("IMAGE",),
                 "image_left": ("IMAGE",),
                 "image_right": ("IMAGE",),
                 "image_high_angle": ("IMAGE",),
+                "image_low_angle": ("IMAGE",),
+                "image_back": ("IMAGE",),
+                "image_back_side": ("IMAGE",),
                 "image_detail_1": ("IMAGE",),
                 "image_detail_2": ("IMAGE",),
             }
@@ -1253,7 +1354,8 @@ class NakuNodeAssetsCombine:
 
     def combine_images(self, template_type, direction, long_side_pixels, border_width, border_color, output_format,
                       image_front=None, image_left=None, image_right=None,
-                      image_high_angle=None, image_detail_1=None, image_detail_2=None):
+                      image_high_angle=None, image_low_angle=None, image_back=None, 
+                      image_back_side=None, image_detail_1=None, image_detail_2=None):
 
         # 将颜色名称转换为RGB值
         color_map = {
@@ -1271,14 +1373,18 @@ class NakuNodeAssetsCombine:
         # Using fixed English labels
         labels = [
             "Front View",
-            "Left Side View", 
+            "Left Side View",
             "Right Side View",
-            "High Angle Shot",
+            "High Angle View",
+            "Low Angle View",
+            "Back View",
+            "Back Side View",
             "Detail01",
             "Detail02"
         ]
 
-        image_inputs = [image_front, image_left, image_right, image_high_angle, image_detail_1, image_detail_2]
+        image_inputs = [image_front, image_left, image_right, image_high_angle, 
+                       image_low_angle, image_back, image_back_side, image_detail_1, image_detail_2]
 
         for img_tensor in image_inputs:
             if img_tensor is not None:
@@ -1295,14 +1401,26 @@ class NakuNodeAssetsCombine:
         if not valid_images:
             raise ValueError("至少需要一张输入图片")
 
+        # 检查图片数量与模式匹配
+        num_valid_images = len(valid_images)
+        
+        if direction == "3x3网格拼接" and num_valid_images < 9:
+            raise ValueError("Opps，不够九张图哦")
+        
+        if direction == "2x3网格拼接" and num_valid_images > 6:
+            raise ValueError("Opps，超过6张图片哦")
+
         # 计算拼接布局
         if direction == "横向拼接":
             combined_img = self._horizontal_layout(valid_images, border_width, border_rgb, long_side_pixels)
         elif direction == "竖向拼接":
             combined_img = self._vertical_layout(valid_images, border_width, border_rgb, long_side_pixels)
-        else:  # 2x3网格拼接
+        elif direction == "2x3网格拼接":
             # 即使图片数量不足6张，也要执行网格布局，缺少的图片用空白或复制现有图片填充
             combined_img = self._grid_layout(valid_images, border_width, border_rgb, long_side_pixels)
+        elif direction == "3x3网格拼接":
+            # 执行3x3网格布局
+            combined_img = self._grid3x3_layout(valid_images, border_width, border_rgb, long_side_pixels)
 
         # 将PIL图像转换回PyTorch张量
         combined_tensor = torch.from_numpy(np.array(combined_img).astype(np.float32) / 255.0).unsqueeze(0)
@@ -1585,6 +1703,116 @@ class NakuNodeAssetsCombine:
 
         return canvas
 
+    def _grid3x3_layout(self, valid_images, border_width, border_rgb, long_side_pixels):
+        """3x3网格拼接布局 - 四周统一有边框"""
+        # 确保有9张图片
+        num_images = len(valid_images)
+        if num_images < 9:
+            # 这种情况不应该发生，因为已经在主函数中检查过了
+            raise ValueError("Opps，不够九张图哦")
+
+        # 只取前9张图片
+        filled_valid_images = valid_images[:9]
+
+        # 缩放所有图片，使每张图片的长边等于指定像素
+        resized_images = []
+        for (img, label) in filled_valid_images:
+            # 获取原始尺寸
+            orig_width, orig_height = img.size
+            # 计算缩放比例
+            if orig_width > orig_height:
+                # 宽大于高，以宽度为准
+                scale_factor = long_side_pixels / orig_width
+                new_width = long_side_pixels
+                new_height = int(orig_height * scale_factor)
+            else:
+                # 高大于等于宽，以高度为准
+                scale_factor = long_side_pixels / orig_height
+                new_height = long_side_pixels
+                new_width = int(orig_width * scale_factor)
+
+            # 缩放图片
+            resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            resized_images.append((resized_img, label))
+
+        # 计算网格布局尺寸
+        # 3列3行 - 计算每列和每行的最大尺寸
+        col1_width = max(resized_images[i][0].size[0] for i in [0, 3, 6])  # 第一列的最大宽度
+        col2_width = max(resized_images[i][0].size[0] for i in [1, 4, 7])  # 第二列的最大宽度
+        col3_width = max(resized_images[i][0].size[0] for i in [2, 5, 8])  # 第三列的最大宽度
+        row1_height = resized_images[0][0].size[1]  # 第一行的高度
+        row2_height = resized_images[3][0].size[1]  # 第二行的高度
+        row3_height = resized_images[6][0].size[1]  # 第三行的高度
+
+        # 计算最终画布尺寸
+        # 总宽度 = 左边框 + 第一列 + 中间边框 + 第二列 + 中间边框 + 第三列 + 右边框
+        total_width = border_width + col1_width + border_width + col2_width + border_width + col3_width + border_width
+        # 总高度 = 上边框 + 第一行 + 行间边框 + 第二行 + 行间边框 + 第三行 + 下边框
+        total_height = border_width + row1_height + border_width + row2_height + border_width + row3_height + border_width
+
+        # 创建画布 - 使用边框颜色
+        canvas = Image.new('RGB', (total_width, total_height), border_rgb)
+
+        font_size = max(12, border_width // 2)
+
+        # 加载支持中文的字体
+        font = self.get_system_font(font_size)
+
+        # 计算反色
+        text_rgb = tuple(255 - c for c in border_rgb)
+
+        # 定义位置：3列3行，确保边框宽度一致
+        # 每个单元格的标签区域位于图片上方，高度为border_width
+        positions = [
+            (border_width, border_width),  # 第1张 - 左上 [0] - (左边框, 上边框)
+            (border_width + col1_width + border_width, border_width),  # 第2张 - 中上 [1] - (左边框+第一列+中间边框, 上边框)
+            (border_width + col1_width + border_width + col2_width + border_width, border_width),  # 第3张 - 右上 [2] - (左边框+第一列+中间边框+第二列+中间边框, 上边框)
+            (border_width, border_width + row1_height + border_width), # 第4张 - 左中 [3] - (左边框, 上边框+第一行+行间边框)
+            (border_width + col1_width + border_width, border_width + row1_height + border_width), # 第5张 - 中中 [4] - (左边框+第一列+中间边框, 上边框+第一行+行间边框)
+            (border_width + col1_width + border_width + col2_width + border_width, border_width + row1_height + border_width), # 第6张 - 右中 [5] - (左边框+第一列+中间边框+第二列+中间边框, 上边框+第一行+行间边框)
+            (border_width, border_width + row1_height + border_width + row2_height + border_width), # 第7张 - 左下 [6] - (左边框, 上边框+第一行+行间边框+第二行+行间边框)
+            (border_width + col1_width + border_width, border_width + row1_height + border_width + row2_height + border_width), # 第8张 - 中下 [7] - (左边框+第一列+中间边框, 上边框+第一行+行间边框+第二行+行间边框)
+            (border_width + col1_width + border_width + col2_width + border_width, border_width + row1_height + border_width + row2_height + border_width) # 第9张 - 右下 [8] - (左边框+第一列+中间边框+第二列+中间边框, 上边框+第一行+行间边框+第二行+行间边框)
+        ]
+
+        # 绘制每个单元格
+        for i in range(9):
+            img, label = resized_images[i]
+            pos_x, pos_y = positions[i]
+
+            # 绘制标签区域（整个单元格的顶部边框区域）
+            draw = ImageDraw.Draw(canvas)
+
+            # 标签区域的坐标
+            cell_width = col1_width if i % 3 == 0 else (col2_width if i % 3 == 1 else col3_width)
+            cell_height = row1_height if i < 3 else (row2_height if i < 6 else row3_height)
+
+            # 标签区域：在图片上方绘制边框色块
+            label_area = [pos_x, pos_y, pos_x + cell_width, pos_y + border_width]
+            draw.rectangle(label_area, fill=border_rgb)
+
+            # 添加标签文本，居左对齐
+            text_x = pos_x + 5  # 左边距5像素
+            text_y = pos_y + (border_width - font_size) // 2
+
+            # 使用更好的文本渲染方法
+            try:
+                draw.text((text_x, text_y), label, fill=text_rgb, font=font)
+            except UnicodeEncodeError:
+                # 如果遇到编码错误，尝试使用ASCII字符
+                safe_label = label.encode('utf-8', errors='ignore').decode('utf-8')
+                draw.text((text_x, text_y), safe_label, fill=text_rgb, font=font)
+
+            # 粘贴图片
+            canvas.paste(img, (pos_x, pos_y + border_width))
+
+        # 确保底部边框存在 - 在最下方添加一行边框
+        draw = ImageDraw.Draw(canvas)
+        bottom_border_area = [0, total_height - border_width, total_width, total_height]
+        draw.rectangle(bottom_border_area, fill=border_rgb)
+
+        return canvas
+
 
 # 合并所有节点映射
 NODE_CLASS_MAPPINGS = {
@@ -1600,6 +1828,7 @@ NODE_CLASS_MAPPINGS = {
     "NakuNode_故事板输出": NakuNode_故事板输出,
     "NakuNode_图像组合": NakuNode_图像组合,
     "NakuNode_MultiText": NakuNode_MultiText,
+    "NakuNode_ImageSplit": NakuNode_ImageSplit,
     "NakuNodeAssetsCombine": NakuNodeAssetsCombine,
 }
 
@@ -1615,6 +1844,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "NakuNode_故事板输出": "NakuNode_故事板输出",
     "NakuNode_图像组合": "NakuNode_图像组合",
     "NakuNode_MultiText": "NakuNode_MultiText",
-    "NakuNodeAssetsCombine": "NakuNode_图片拼接",
+    "NakuNode_ImageSplit": "NakuNode_图像分割",
+    "NakuNodeAssetsCombine": "NakuNode_图片拼接(支持最多9张)",
     "NakuNode_VideoSave": "NakuNode_视频保存",
 }

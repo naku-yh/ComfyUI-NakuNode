@@ -1,6 +1,6 @@
 # ComfyUI-NakuNode
 
-**NakuNode V3.2** ---  NakuNode is build by Naku. It can make your work more easier.
+**NakuNode V3.3** ---  NakuNode is build by Naku. It can make your work more easier.
 
 ## 介绍
 
@@ -87,11 +87,13 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 - 当禁用合并选项时，各文本框内容分别输出到对应接口
 
 #### NakuNode_图片拼接
-- 支持根据模板拼接最多6张图片，具有多种自定义选项
+- 支持根据模板拼接最多9张图片，具有多种自定义选项
 - 提供场景图拼接和角色图拼接两种模板
-- 支持横向拼接、竖向拼接和2x3网格拼接三种布局方式
+- 支持横向拼接、竖向拼接、2x3网格拼接和3x3网格拼接四种布局方式
 - 可自定义长边像素、边框宽度、边框颜色和输出格式
-- 为每张图片自动添加中文标签，便于识别不同视角的图像
+- 为每张图片自动添加英文标签（Front View / Left Side View / Right Side View / High Angle View / Low Angle View / Back View / Back Side View / Detail01 / Detail02），便于识别不同视角的图像
+- 当选择3x3模式但图片少于9张时显示错误信息"Opps，不够九张图哦"
+- 当选择2x3模式但图片大于6张时显示错误信息"Opps，超过6张图片哦"
 
 ### 5. 工具节点
 
@@ -122,7 +124,15 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 - 支持元数据嵌入（保留工作流信息和提示词）
 - 提供视频预览功能，支持播放、暂停和下载
 
-### 8. Flux2节点
+### 8. 图像分割节点
+
+#### NakuNode_ImageSplit
+- 图像分割节点，可将单张图像按指定行列数切割成多个子图像
+- 支持多种宽高比选择（16:9, 9:16, 1:1, 4:3, 3:4）
+- 可调节收缩像素以避免边缘重叠
+- 输出切片图像列表及行列数信息
+
+### 9. Flux2节点
 
 #### NakuNode Flux2 Image Reference
 - 专为Flux2模型设计的图像参考节点
@@ -157,6 +167,19 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 - 默认帧率调整为25 FPS
 - 支持音频轨道合并和元数据嵌入
 - 提供视频预览功能
+
+### V3.3
+- 新增 NakuNode_ImageSplit 节点：图像分割节点，可将单张图像按指定行列数切割成多个子图像
+- 支持多种宽高比选择（16:9, 9:16, 1:1, 4:3, 3:4）
+- 可调节收缩像素以避免边缘重叠
+- 引入utils目录结构，便于节点分类管理
+
+### V3.4
+- 扩展 NakuNode_图片拼接 节点：从最多支持6张图片扩展至最多支持9张图片
+- 新增3x3网格拼接模式
+- 新增3张图片输入接口（image_low_angle、image_back、image_back_side）
+- 修改图片标签为英文（Front View / Left Side View / Right Side View / High Angle View / Low Angle View / Back View / Back Side View / Detail01 / Detail02）
+- 添加错误检查机制：当选择3x3模式但图片少于9张时显示错误信息"Opps，不够九张图哦"；当选择2x3模式但图片大于6张时显示错误信息"Opps，超过6张图片哦"
 
 ## 鸣谢
 
