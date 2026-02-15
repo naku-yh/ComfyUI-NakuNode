@@ -128,11 +128,16 @@ class NakuNode_常用尺寸:
     def INPUT_TYPES(s):
         return {
             "required": {
+                "启用自定义尺寸": ("BOOLEAN", {"default": False}),
                 "模型选择": (["Qwen", "Flux2", "WAN", "LTX2"], {"default": "Qwen"}),
                 "尺寸选择": (["大尺寸", "小尺寸"], {"default": "大尺寸"}),
                 "常用尺寸": (["1:1", "3:2", "4:3", "16:9"], {"default": "1:1"}),
                 "画面模式": (["横屏", "竖屏"], {"default": "横屏"}),
             },
+            "optional": {
+                "自定义宽度": ("INT", {"default": 1024, "min": 1, "max": 8192, "step": 1}),
+                "自定义高度": ("INT", {"default": 1024, "min": 1, "max": 8192, "step": 1}),
+            }
         }
 
     RETURN_TYPES = ("INT", "INT")
@@ -140,7 +145,15 @@ class NakuNode_常用尺寸:
     FUNCTION = "get_size"
     CATEGORY = "NakuNodes/Utils"
 
-    def get_size(self, 模型选择, 尺寸选择, 常用尺寸, 画面模式):
+    def get_size(self, 启用自定义尺寸, 模型选择, 尺寸选择, 常用尺寸, 画面模式, 自定义宽度=None, 自定义高度=None):
+        # 如果启用了自定义尺寸，则直接返回自定义的宽高
+        if 启用自定义尺寸:
+            if 自定义宽度 is None:
+                自定义宽度 = 1024
+            if 自定义高度 is None:
+                自定义高度 = 1024
+            return (自定义宽度, 自定义高度)
+        
         # Define aspect ratio mappings for each model and size
         model_sizes = {
             "WAN": {
