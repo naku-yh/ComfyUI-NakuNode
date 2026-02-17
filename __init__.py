@@ -24,6 +24,8 @@ print("  - NakuNode_故事板输出: 故事板输出节点，将多个图像组�
 print("  - NakuNode_图像组合: 图像组合节点，将两张图像按横向或纵向排列组合")
 print("  - NakuNode_VideoSave: 视频保存节点，将图像序列保存为视频文件，支持多种格式(h264/h265/ProRes422/ProRes422LT/GIF/WebM)")
 print("  - NakuNode_ImageSplit: 图像分割节点，可将单张图像按指定行列数切割成多个子图像")
+print("  - NakuNode_镜头控制文字版：VNCCS 位置控制节点，通过滑块控制相机位置生成多视角提示词")
+print("  - NakuNode_镜头可视化控制：VNCCS 可视化相机控制节点，带可视化 Widget 的交互式相机控制")
 print("  - API节点: 基于Comfly重新编译的API节点，支持多种AI services")
 print("  - Flux2节点: 专为Flux2模型设计的图像参考节点")
 

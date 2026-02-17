@@ -1270,6 +1270,187 @@ class NakuNode_MultiText:
             return (text1, text2, text3)
 
 
+
+
+# --------------------------------------------------------------------------------
+# VNCCS Position Control Nodes (移植自 ComfyUI_VNCCS_Utils)
+# --------------------------------------------------------------------------------
+class NakuNode_镜头控制文字版:
+    """
+    VNCCS 位置控制节点
+    通过滑块控制相机位置，生成用于多视角 LoRA 的提示词
+    专为 Qwen-Image-Edit-2511-Multiple-Angles LoRA 优化
+    """
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "方位角": ("INT", {
+                    "default": 0,
+                    "min": 0,
+                    "max": 360,
+                    "step": 45,
+                    "display": "slider",
+                    "tooltip": "相机环绕角度 (0=正面，90=右侧，180=背面，270=左侧)"
+                }),
+                "仰角": ("INT", {
+                    "default": 0,
+                    "min": -30,
+                    "max": 60,
+                    "step": 30,
+                    "display": "slider",
+                    "tooltip": "相机垂直角度 (-30=低角度，0=平视，30=高角度，60=俯视)"
+                }),
+                "拍摄距离": (["特写", "中景", "广角"], {
+                    "default": "中景",
+                    "tooltip": "拍摄距离：特写 (close-up), 中景 (medium shot), 广角 (wide shot)"
+                }),
+                "包含触发词": ("BOOLEAN", {
+                    "default": True,
+                    "tooltip": "是否包含<sks>触发词"
+                }),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("提示词",)
+    FUNCTION = "generate_prompt"
+    CATEGORY = "NakuNodes/Utils"
+
+    def generate_prompt(self, 方位角,仰角,拍摄距离,包含触发词):
+        # 标准化方位角到 0-359
+        azimuth = int(方位角) % 360
+
+        # 方位角映射 (基于 Qwen-Image-Edit-2511-Multiple-Angles-LoRA 文档)
+        azimuth_map = {
+            0: "front view",
+            45: "front-right quarter view",
+            90: "right side view",
+            135: "back-right quarter view",
+            180: "back view",
+            225: "back-left quarter view",
+            270: "left side view",
+            315: "front-left quarter view"
+        }
+
+        # 距离映射（中文转英文）
+        distance_map = {
+            "特写": "close-up",
+            "中景": "medium shot",
+            "广角": "wide shot"
+        }
+        distance_en = distance_map.get(拍摄距离,"medium shot")
+
+        # 找到最接近的方位角
+        if azimuth > 337.5:
+            closest_azimuth = 0
+        else:
+            closest_azimuth = min(azimuth_map.keys(), key=lambda x: abs(x - azimuth))
+
+        az_str = azimuth_map[closest_azimuth]
+
+        # 仰角映射
+        elevation_map = {
+            -30: "low-angle shot",
+            0: "eye-level shot",
+            30: "elevated shot",
+            60: "high-angle shot"
+        }
+
+        closest_elevation = min(elevation_map.keys(), key=lambda x: abs(x - 仰角))
+        el_str = elevation_map[closest_elevation]
+
+        # 构建提示词
+        parts = []
+        if 包含触发词:
+            parts.append("<sks>")
+        parts.append(az_str)
+        parts.append(el_str)
+        parts.append(distance_en)
+
+        return (" ".join(parts),)
+
+
+class NakuNode_镜头可视化控制:
+    """
+    VNCCS 可视化相机控制节点
+    带可视化 Widget 的交互式相机控制，支持鼠标点击选择角度
+    """
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "camera_data": ("STRING", {
+                    "default": "{}",
+                    "hidden": True
+                }),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("prompt",)
+    FUNCTION = "generate_prompt_from_json"
+    CATEGORY = "NakuNodes/Utils"
+
+    def generate_prompt_from_json(self, camera_data):
+        try:
+            data = json.loads(camera_data)
+        except json.JSONDecodeError:
+            # 回退默认值
+            data = {"azimuth": 0, "elevation": 0, "distance": "medium shot", "include_trigger": True}
+
+        # 复用 PositionControl 的生成逻辑
+        azimuth = data.get("azimuth", 0)
+        elevation = data.get("elevation", 0)
+        distance = data.get("distance", "medium shot")
+        include_trigger = data.get("include_trigger", True)
+
+        # 标准化方位角
+        azimuth = int(azimuth) % 360
+
+        # 方位角映射
+        azimuth_map = {
+            0: "front view",
+            45: "front-right quarter view",
+            90: "right side view",
+            135: "back-right quarter view",
+            180: "back view",
+            225: "back-left quarter view",
+            270: "left side view",
+            315: "front-left quarter view"
+        }
+
+        if azimuth > 337.5:
+            closest_azimuth = 0
+        else:
+            closest_azimuth = min(azimuth_map.keys(), key=lambda x: abs(x - azimuth))
+
+        az_str = azimuth_map[closest_azimuth]
+
+        # 仰角映射
+        elevation_map = {
+            -30: "low-angle shot",
+            0: "eye-level shot",
+            30: "elevated shot",
+            60: "high-angle shot"
+        }
+
+        closest_elevation = min(elevation_map.keys(), key=lambda x: abs(x - 仰角))
+        el_str = elevation_map[closest_elevation]
+
+        # 构建提示词
+        parts = []
+        if include_trigger:
+            parts.append("<sks>")
+        parts.append(az_str)
+        parts.append(el_str)
+        parts.append(distance)
+
+        return (" ".join(parts),)
+
+
 class NakuNodeAssetsCombine:
     """
     图片拼接节点
@@ -1843,6 +2024,8 @@ NODE_CLASS_MAPPINGS = {
     "NakuNode_MultiText": NakuNode_MultiText,
     "NakuNode_ImageSplit": NakuNode_ImageSplit,
     "NakuNodeAssetsCombine": NakuNodeAssetsCombine,
+    "NakuNode_镜头控制文字版": NakuNode_镜头控制文字版,
+    "NakuNode_镜头可视化控制": NakuNode_镜头可视化控制,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -1860,4 +2043,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "NakuNode_ImageSplit": "NakuNode_图像分割",
     "NakuNodeAssetsCombine": "NakuNode_图片拼接(支持最多9张)",
     "NakuNode_VideoSave": "NakuNode_视频保存",
+    "NakuNode_镜头控制文字版": "NakuNode_镜头控制文字版",
+    "NakuNode_镜头可视化控制": "NakuNode_镜头可视化控制",
 }
