@@ -159,7 +159,7 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 
 ### V3.1
 - 新增 NakuNode_MultiText 节点：多文本节点，具有三个文本框和三个输出接口，支持合并文本功能
-- 新增 NakuNode_图片拼接 节点：支持根据模板拼接最多6张图片，具有多种自定义选项
+- 新增 NakuNode_图片拼接 节点：支持根据模板拼接，具有多种自定义选项
 - 优化了模块导入机制，修复了相对导入问题
 - 改进了节点分类，所有新节点归类到 NakuNodes/Utils 类别
 
@@ -175,13 +175,6 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 - 支持多种宽高比选择（16:9, 9:16, 1:1, 4:3, 3:4）
 - 可调节收缩像素以避免边缘重叠
 - 引入utils目录结构，便于节点分类管理
-
-### V3.4
-- 扩展 NakuNode_图片拼接 节点：从最多支持6张图片扩展至最多支持9张图片
-- 新增3x3网格拼接模式
-- 新增3张图片输入接口（image_low_angle、image_back、image_back_side）
-- 修改图片标签为英文（Front View / Left Side View / Right Side View / High Angle View / Low Angle View / Back View / Back Side View / Detail01 / Detail02）
-- 添加错误检查机制：当选择3x3模式但图片少于9张时显示错误信息"Opps，不够九张图哦"；当选择2x3模式但图片大于6张时显示错误信息"Opps，超过6张图片哦"
 
 ## 鸣谢
 
