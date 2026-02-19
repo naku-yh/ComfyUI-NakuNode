@@ -1437,7 +1437,7 @@ class NakuNode_镜头可视化控制:
             60: "high-angle shot"
         }
 
-        closest_elevation = min(elevation_map.keys(), key=lambda x: abs(x - 仰角))
+        closest_elevation = min(elevation_map.keys(), key=lambda x: abs(x - elevation))
         el_str = elevation_map[closest_elevation]
 
         # 构建提示词

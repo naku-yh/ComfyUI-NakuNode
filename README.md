@@ -1,6 +1,6 @@
 # ComfyUI-NakuNode
 
-**NakuNode V3.3** ---  NakuNode is build by Naku. It can make your work more easier.
+**NakuNode V3.5** ---  NakuNode is build by Naku. It can make your work more easier.
 
 ## 介绍
 
@@ -146,6 +146,23 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 - 节点位于 "Flux2" 类别下
 
 
+
+### 10. 镜头控制节点
+
+#### NakuNode_镜头控制文字版
+- VNCCS 位置控制节点，通过滑块控制相机位置生成多视角提示词
+- 专为 Qwen-Image-Edit-2511-Multiple-Angles LoRA 优化
+- 支持方位角控制（0=正面，90=右侧，180=背面，270=左侧）
+- 支持仰角控制（-30=低角度，0=平视，30=高角度，60=俯视）
+- 支持拍摄距离选择（特写、中景、广角）
+- 可选是否包含<sks>触发词
+
+#### NakuNode_镜头可视化控制
+- VNCCS 可视化相机控制节点，带可视化 Widget 的交互式相机控制
+- 支持鼠标点击选择相机角度
+- 可视化方位角和仰角选择
+- 生成用于多视角生成的相机提示词
+
 ## 安装
 
 1. 将此项目克隆或下载到您的 ComfyUI 的 `custom_nodes` 目录中
@@ -159,7 +176,7 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 
 ### V3.1
 - 新增 NakuNode_MultiText 节点：多文本节点，具有三个文本框和三个输出接口，支持合并文本功能
-- 新增 NakuNode_图片拼接 节点：支持根据模板拼接，具有多种自定义选项
+- 新增 NakuNode_图片拼接 节点：支持根据模板拼接最多6张图片，具有多种自定义选项
 - 优化了模块导入机制，修复了相对导入问题
 - 改进了节点分类，所有新节点归类到 NakuNodes/Utils 类别
 
@@ -175,6 +192,18 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 - 支持多种宽高比选择（16:9, 9:16, 1:1, 4:3, 3:4）
 - 可调节收缩像素以避免边缘重叠
 - 引入utils目录结构，便于节点分类管理
+
+### V3.4
+- 扩展 NakuNode_图片拼接 节点：从最多支持6张图片扩展至最多支持9张图片
+- 新增3x3网格拼接模式
+- 新增3张图片输入接口（image_low_angle、image_back、image_back_side）
+- 修改图片标签为英文（Front View / Left Side View / Right Side View / High Angle View / Low Angle View / Back View / Back Side View / Detail01 / Detail02）
+- 添加错误检查机制：当选择3x3模式但图片少于9张时显示错误信息"Opps，不够九张图哦"；当选择2x3模式但图片大于6张时显示错误信息"Opps，超过6张图片哦"
+
+### V3.5
+- 新增 NakuNode_镜头控制文字版 节点：VNCCS 位置控制节点，通过滑块控制相机位置生成多视角提示词，专为 Qwen-Image-Edit-2511-Multiple-Angles LoRA 优化
+- 新增 NakuNode_镜头可视化控制 节点：VNCCS 可视化相机控制节点，带可视化 Widget 的交互式相机控制，支持鼠标点击选择角度
+- 修复镜头控制节点的变量名错误
 
 ## 鸣谢
 

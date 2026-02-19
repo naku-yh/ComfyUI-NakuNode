@@ -5,10 +5,10 @@ import sys
 import json
 
 # Print version information when loading
-print("\033[92mNakuNode V3.3\033[0m \033[93m---\033[0m \033[1;37mNakuNode is build by Naku.\033[0m It can make your work more easier.")
+print("\033[92mNakuNode V3.5\033[0m \033[93m---\033[0m \033[1;37mNakuNode is build by Naku.\033[0m It can make your work more easier.")
 
 # List of all nodes and their functions
-print("NakuNode V3.3 包含以下节点:")
+print("NakuNode V3.5 包含以下节点:")
 print("  - NakuNode_SaveImage: 保存图像，支持自定义文件名前缀、路径、格式和质量设置")
 print("  - NakuNode_常用尺寸: 提供常用的图像尺寸比例和画面模式选择")
 print("  - NakuNode_图像边框: 为图像添加指定颜色和宽度的边框")
