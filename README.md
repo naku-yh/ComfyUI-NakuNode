@@ -92,8 +92,7 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 - 支持横向拼接、竖向拼接、2x3网格拼接和3x3网格拼接四种布局方式
 - 可自定义长边像素、边框宽度、边框颜色和输出格式
 - 为每张图片自动添加英文标签（Front View / Left Side View / Right Side View / High Angle View / Low Angle View / Back View / Back Side View / Detail01 / Detail02），便于识别不同视角的图像
-- 当选择3x3模式但图片少于9张时显示错误信息"Opps，不够九张图哦"
-- 当选择2x3模式但图片大于6张时显示错误信息"Opps，超过6张图片哦"
+
 
 ### 5. 工具节点
 
@@ -102,7 +101,6 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 - 支持多种宽高比（1:1, 3:2, 4:3, 16:9）
 - 可选择横屏或竖屏模式
 - 新增"启用自定义尺寸"开关，当开启时忽略预设尺寸，使用自定义的长宽数值
-- 自定义尺寸支持1-8192像素范围内的任意数值
 
 #### NakuNode_文件管理
 - 文件管理节点，支持批量重命名图像文件
@@ -112,7 +110,7 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 ### 6. API节点
 - 基于Comfly重新编译的API节点
 - 支持多种AI服务（Google Veo3, Gemini, Kling, Midjourney, Sora2, Vidu等）
-- 除了使用Comfly的api地址外，使用"IP"即可填写任意API节点
+- 除了使用Comfly的api地址外，使用"IP"即可填写任意API节点的URL
 
 ### 7. 视频处理节点
 
@@ -150,7 +148,7 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 ### 10. 镜头控制节点
 
 #### NakuNode_镜头控制文字版
-- VNCCS 位置控制节点，通过滑块控制相机位置生成多视角提示词
+- 基于VNCCS 位置控制节点修改，通过滑块控制相机位置生成多视角提示词
 - 专为 Qwen-Image-Edit-2511-Multiple-Angles LoRA 优化
 - 支持方位角控制（0=正面，90=右侧，180=背面，270=左侧）
 - 支持仰角控制（-30=低角度，0=平视，30=高角度，60=俯视）
@@ -158,7 +156,7 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 - 可选是否包含<sks>触发词
 
 #### NakuNode_镜头可视化控制
-- VNCCS 可视化相机控制节点，带可视化 Widget 的交互式相机控制
+- 基于VNCCS 可视化相机控制节点，带可视化 Widget 的交互式相机控制
 - 支持鼠标点击选择相机角度
 - 可视化方位角和仰角选择
 - 生成用于多视角生成的相机提示词
@@ -198,11 +196,11 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 - 新增3x3网格拼接模式
 - 新增3张图片输入接口（image_low_angle、image_back、image_back_side）
 - 修改图片标签为英文（Front View / Left Side View / Right Side View / High Angle View / Low Angle View / Back View / Back Side View / Detail01 / Detail02）
-- 添加错误检查机制：当选择3x3模式但图片少于9张时显示错误信息"Opps，不够九张图哦"；当选择2x3模式但图片大于6张时显示错误信息"Opps，超过6张图片哦"
+- 添加错误检查机制
 
 ### V3.5
-- 新增 NakuNode_镜头控制文字版 节点：VNCCS 位置控制节点，通过滑块控制相机位置生成多视角提示词，专为 Qwen-Image-Edit-2511-Multiple-Angles LoRA 优化
-- 新增 NakuNode_镜头可视化控制 节点：VNCCS 可视化相机控制节点，带可视化 Widget 的交互式相机控制，支持鼠标点击选择角度
+- 新增 NakuNode_镜头控制文字版 节点：基于VNCCS 位置控制节点改造，通过滑块控制相机位置生成多视角提示词，专为 Qwen-Image-Edit-2511-Multiple-Angles LoRA 优化
+- 新增 NakuNode_镜头可视化控制 节点：基于VNCCS 可视化相机控制节点改造，带可视化 Widget 的交互式相机控制，支持鼠标点击选择角度
 - 修复镜头控制节点的变量名错误
 
 ## 鸣谢
