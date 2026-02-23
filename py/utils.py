@@ -19,13 +19,13 @@ class NakuNode_SaveImage:
                 "filename_prefix": ("STRING", {
                     "default": "ComfyUI_{timestamp}",
                     "multiline": False,
-                    "tooltip": "文件名前缀，支持表达式：{timestamp}时间戳、{date}日期、{time}时间、{datetime}日期时间、{batch}批次号、{counter}计数器"
+                    "tooltip": "文件名前缀, 支持表达式：{timestamp}时间戳、{date}日期、{time}时间、{datetime}日期时间、{batch}批次号、{counter}计数器"
                 }),
                 "path": ("STRING", {
                     "default": "",
                     "multiline": False,
                     "placeholder": "留空使用默认输出目录",
-                    "tooltip": "保存路径，支持绝对路径和相对路径，不存在时自动创建"
+                    "tooltip": "保存路径, 支持绝对路径和相对路径, 不存在时自动创建"
                 }),
                 "format": (["png", "jpg", "webp"], {
                     "default": "png",
@@ -36,7 +36,7 @@ class NakuNode_SaveImage:
                     "min": 1,
                     "max": 100,
                     "step": 1,
-                    "tooltip": "图像质量(1-100)，仅对JPG和WebP格式有效，PNG格式忽略此参数"
+                    "tooltip": "图像质量(1-100), 仅对JPG和WebP格式有效, PNG格式忽略此参数"
                 }),
             },
         }
@@ -69,7 +69,7 @@ class NakuNode_SaveImage:
         time_str = now.strftime("%H%M%S")
         datetime_str = now.strftime("%Y%m%d_%H%M%S")
 
-        # 预处理文件名前缀，只替换非批次相关的变量
+        # 预处理文件名前缀, 只替换非批次相关的变量
         base_prefix = filename_prefix.replace("{timestamp}", timestamp)
         base_prefix = base_prefix.replace("{date}", date_str)
         base_prefix = base_prefix.replace("{time}", time_str)
@@ -95,7 +95,7 @@ class NakuNode_SaveImage:
             # 生成文件名
             final_filename = f"{processed_prefix}{file_extension}"
 
-            # 如果没有使用批次或计数器变量，且有多张图片，需要避免重名
+            # 如果没有使用批次或计数器变量, 且有多张图片, 需要避免重名
             if len(images) > 1 and "{batch}" not in filename_prefix and "{counter}" not in filename_prefix:
                 name_without_ext = os.path.splitext(final_filename)[0]
                 final_filename = f"{name_without_ext}_{batch_number:05d}{file_extension}"
@@ -103,7 +103,7 @@ class NakuNode_SaveImage:
             file_path = os.path.join(full_output_folder, final_filename)
             counter += 1
 
-            # 根据格式保存图像，移除optimize减少处理时间
+            # 根据格式保存图像, 移除optimize减少处理时间
             if format == "png":
                 # 使用与系统相同的compress_level
                 img.save(file_path, format='PNG', compress_level=4)
@@ -146,7 +146,7 @@ class NakuNode_常用尺寸:
     CATEGORY = "NakuNodes/Utils"
 
     def get_size(self, 启用自定义尺寸, 模型选择, 尺寸选择, 常用尺寸, 画面模式, 自定义宽度=None, 自定义高度=None):
-        # 如果启用了自定义尺寸，则直接返回自定义的宽高
+        # 如果启用了自定义尺寸, 则直接返回自定义的宽高
         if 启用自定义尺寸:
             if 自定义宽度 is None:
                 自定义宽度 = 1024
@@ -265,7 +265,7 @@ class NakuNode_图像边框:
             elif tensor_image.shape[-1] == 3:  # RGB
                 return Image.fromarray(image_np, 'RGB')
 
-        # 默认情况，假设是RGB
+        # 默认情况, 假设是RGB
         return Image.fromarray(image_np, 'RGB')
 
     def pil_to_tensor(self, pil_image):
@@ -307,7 +307,7 @@ class NakuNode_图像边框:
         np_image = np.array(pil_image)
         height, width = np_image.shape[:2]
 
-        # 创建结果数组，先复制原图
+        # 创建结果数组, 先复制原图
         result_array = np_image.copy()
 
         # 生成一个表示透明区域的mask
@@ -317,7 +317,7 @@ class NakuNode_图像边框:
         # 逐层扩展描边
         for i in range(边框像素):
             # 使用形态学操作来扩展非透明区域的边界
-            # 创建一个3x3的核，用于检测邻近的透明像素
+            # 创建一个3x3的核, 用于检测邻近的透明像素
             kernel = np.ones((3, 3), dtype=bool)
 
             # 扩展不透明区域
@@ -329,7 +329,7 @@ class NakuNode_图像边框:
             # 在新扩展的位置添加边框颜色
             result_array[new_outline_positions] = (*outline_color, 255)
 
-            # 更新不透明mask，包含新添加的描边
+            # 更新不透明mask, 包含新添加的描边
             opaque_mask = result_array[:, :, 3] > 0
 
         # 转换回PIL图像
@@ -386,10 +386,10 @@ class NakuNode_图像标注:
         if points:
             draw = ImageDraw.Draw(image_obj)
             try:
-                # 字体大小 46 (65 * 0.7 = 45.5，约等于46，缩小30%)
+                # 字体大小 46 (65 * 0.7 = 45.5, 约等于46, 缩小30%)
                 font = ImageFont.truetype("arial.ttf", 46)
             except:
-                # 如果无法加载特定字体，尝试其他常见字体
+                # 如果无法加载特定字体, 尝试其他常见字体
                 try:
                     font = ImageFont.truetype("Arial.ttf", 46)
                 except:
@@ -399,9 +399,9 @@ class NakuNode_图像标注:
                         try:
                             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 46)  # Linux
                         except:
-                            # 如果所有字体都失败，使用默认字体并调整大小
+                            # 如果所有字体都失败, 使用默认字体并调整大小
                             font = ImageFont.load_default()
-                            # 注意：当使用默认字体时，大小无法调整
+                            # 注意：当使用默认字体时, 大小无法调整
 
             # 定义颜色映射
             color_map = {
@@ -430,10 +430,10 @@ class NakuNode_图像标注:
                     text_x = cx - tw / 2
                     text_y = cy - th / 2
                 except:
-                    # 当使用默认字体时，尺寸可能无法准确计算，使用预估值
-                    tw, th = 38, 38  # 54 * 0.7 = 37.8，约等于38
-                    text_x = cx - 19  # 27 * 0.7 = 18.9，约等于19
-                    text_y = cy - 19  # 27 * 0.7 = 18.9，约等于19
+                    # 当使用默认字体时, 尺寸可能无法准确计算, 使用预估值
+                    tw, th = 38, 38  # 54 * 0.7 = 37.8, 约等于38
+                    text_x = cx - 19  # 27 * 0.7 = 18.9, 约等于19
+                    text_y = cy - 19  # 27 * 0.7 = 18.9, 约等于19
 
                 draw.text((text_x, text_y), label, fill="#FFFFFF", font=font)
 
@@ -535,8 +535,8 @@ class NakuNode_文件管理:
 # --------------------------------------------------------------------------------
 class NakuNode_图像标注节点V2:
     """
-    一个图像标注助手节点，基于输入图像进行标注。
-    它接收原始图像，在前端进行编辑，然后输出最终结果。
+    一个图像标注助手节点, 基于输入图像进行标注。
+    它接收原始图像, 在前端进行编辑, 然后输出最终结果。
     """
     @classmethod
     def INPUT_TYPES(s):
@@ -561,7 +561,7 @@ class NakuNode_图像标注节点V2:
             _, img_h, img_w, _ = 图像.shape
             target_width, target_height = img_w, img_h
         else:
-            # 如果没有图像输入，设置默认尺寸
+            # 如果没有图像输入, 设置默认尺寸
             target_width, target_height = 512, 512
 
         # 解码前端传来的、包含所有编辑的画布数据
@@ -579,7 +579,7 @@ class NakuNode_图像标注节点V2:
                 print(f"[NAKU] 解码标注数据时出错: {e}")
                 final_edit_layer_pil = Image.new("RGBA", (target_width, target_height), (0, 0, 0, 0))
         else:
-            # 如果没有编辑数据，则创建一个完全透明的图层
+            # 如果没有编辑数据, 则创建一个完全透明的图层
             final_edit_layer_pil = Image.new("RGBA", (target_width, target_height), (0, 0, 0, 0))
 
         # 准备背景图
@@ -588,7 +588,7 @@ class NakuNode_图像标注节点V2:
             i = 255. * 图像[0].cpu().numpy()
             bg_pil = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8)).convert('RGBA')
         else:
-            # 如果没有背景图，则创建一个黑色背景
+            # 如果没有背景图, 则创建一个黑色背景
             bg_pil = Image.new("RGBA", (target_width, target_height), (0, 0, 0, 255))
 
         # 将编辑图层合成到背景图上
@@ -606,8 +606,8 @@ class NakuNode_图像标注节点V2:
 # --------------------------------------------------------------------------------
 class NakuNode_简易画板:
     """
-    一个简易画板节点，允许用户进行自由绘制。
-    它有一个mask输入接口（可选），直接在画布上绘制，然后输出绘制结果。
+    一个简易画板节点, 允许用户进行自由绘制。
+    它有一个mask输入接口（可选）, 直接在画布上绘制, 然后输出绘制结果。
     """
     @classmethod
     def INPUT_TYPES(s):
@@ -640,7 +640,7 @@ class NakuNode_简易画板:
 
         width, height = size_map[画板预设]
 
-        # 如果选择了竖屏模式，交换宽高
+        # 如果选择了竖屏模式, 交换宽高
         if 图像模式 == "竖屏":
             width, height = height, width
 
@@ -667,7 +667,7 @@ class NakuNode_简易画板:
                 print(f"[NAKU] 解码画板数据时出错: {e}")
                 canvas_layer_pil = Image.new("RGBA", (width, height), (0, 0, 0, 0))
         else:
-            # 如果没有编辑数据，则创建一个完全透明的图层
+            # 如果没有编辑数据, 则创建一个完全透明的图层
             canvas_layer_pil = Image.new("RGBA", (width, height), (0, 0, 0, 0))
 
         # 创建指定颜色的背景
@@ -788,12 +788,12 @@ class NakuNode_ImageSplit:
         total_ratio = (列数 / 行数) * tile_ratio
         img_ratio = img_w / img_h
 
-        if img_ratio > total_ratio:  # 原图太宽，切左右
+        if img_ratio > total_ratio:  # 原图太宽, 切左右
             render_h = img_h
             render_w = render_h * total_ratio
             offset_x = (img_w - render_w) / 2
             offset_y = 0
-        else:  # 原图太高，切上下
+        else:  # 原图太高, 切上下
             render_w = img_w
             render_h = render_w / total_ratio
             offset_x = 0
@@ -825,7 +825,7 @@ class NakuNode_ImageSplit:
 
                 # 如果裁剪区域无效则跳过
                 if left >= right or top >= bottom:
-                    print(f"NakuNode: 跳过无效的裁剪区域，切片({r},{c}): left={left}, top={top}, right={right}, bottom={bottom}, 收缩像素={收缩像素}")
+                    print(f"NakuNode: 跳过无效的裁剪区域, 切片({r},{c}): left={left}, top={top}, right={right}, bottom={bottom}, 收缩像素={收缩像素}")
                     continue
 
                 cropped_tile = img.crop((left, top, right, bottom))
@@ -845,7 +845,7 @@ class NakuNode_ImageSplit:
 # --------------------------------------------------------------------------------
 class NakuNode_动态文本拆分与选择:
     """
-    用于拆分和选择文本的节点，适用于Lora提示词筛选器
+    用于拆分和选择文本的节点, 适用于Lora提示词筛选器
     """
 
     @classmethod
@@ -855,7 +855,7 @@ class NakuNode_动态文本拆分与选择:
                 "text_input": ("STRING", {
                     "multiline": True,
                     "default": "1【Lora1】/Lora1提示词\n2【Lora2】/Lora2提示词\n3【Lora3】/Lora3提示词",
-                    "placeholder": "请输入待拆分的文本，每行一个选项，格式：序号【模型名称】/模型提示词"
+                    "placeholder": "请输入待拆分的文本, 每行一个选项, 格式：序号【模型名称】/模型提示词"
                 }),
                 "序号选择": ("INT", {
                     "default": 1,
@@ -881,23 +881,23 @@ class NakuNode_动态文本拆分与选择:
         """
         拆分文本并根据索引返回选中的选项
         """
-        # 按换行符拆分文本，移除空行
+        # 按换行符拆分文本, 移除空行
         options = [line.strip() for line in text_input.split('\n') if line.strip()]
 
-        # 如果没有选项，返回空值
+        # 如果没有选项, 返回空值
         if not options:
             return ("", "", 0)
 
-        # 调整索引（已为1索引，减1以获取数组索引）
+        # 调整索引（已为1索引, 减1以获取数组索引）
         actual_index = 序号选择 - 1
         if 0 <= actual_index < len(options):
             selected_text = options[actual_index]
         else:
-            # 如果索引超出范围，默认选择第一个选项
+            # 如果索引超出范围, 默认选择第一个选项
             selected_text = options[0]
             actual_index = 0
 
-        # 如果启用了"仅输出提示词"，提取"/"后面的部分
+        # 如果启用了"仅输出提示词", 提取"/"后面的部分
         if 仅输出提示词 and selected_text:
             parts = selected_text.split('/')
             if len(parts) > 1:
@@ -918,7 +918,7 @@ class NakuNode_故事板输出:
 
     @classmethod
     def INPUT_TYPES(cls):
-        # 定义所有支持的布局选项，按第一个数字排序
+        # 定义所有支持的布局选项, 按第一个数字排序
         layouts = ["2x2", "2x3", "3x2", "3x3", "3x4", "4x3", "4x4", "4x5", "5x4"]
 
         return {
@@ -928,6 +928,8 @@ class NakuNode_故事板输出:
                 "布局": (layouts,),
                 "长边尺寸": ("INT", {"default": 0, "min": 0, "max": 4096, "step": 1}),
                 "间隔像素": ("INT", {"default": 10, "min": 0, "max": 100, "step": 1}),
+                "title_height": ("INT", {"default": 30, "min": 0, "max": 100, "step": 5}),
+                "title_align": (["居左", "居中", "居右"], {"default": "居中"}),
             },
             "optional": {
                 "图片1": ("IMAGE",),
@@ -958,10 +960,10 @@ class NakuNode_故事板输出:
     FUNCTION = "combine_images"
     CATEGORY = "NakuNodes/Utils"
 
-    def combine_images(self, 输出格式, 图片间隔颜色, 布局, 长边尺寸, 间隔像素, **kwargs):
+    def combine_images(self, 输出格式, 图片间隔颜色, 布局, 长边尺寸, 间隔像素,  title_height=30, title_align="居中", **kwargs):
         # 获取所有传入的图像
         images = []
-        # 根据布局计算需要的图片数量，最多检查20个输入
+        # 根据布局计算需要的图片数量, 最多检查20个输入
         layout_parts = 布局.split('x')
         if len(layout_parts) == 2:
             rows, cols = int(layout_parts[0]), int(layout_parts[1])
@@ -980,13 +982,13 @@ class NakuNode_故事板输出:
 
         # 检查图像数量是否足够
         if len(images) < required_images:
-            raise ValueError(f"Opps，你只有 {len(images)} 张图片，我需要 {required_images} 张图片哦")
+            raise ValueError(f"Opps, 你只有 {len(images)} 张图片, 我需要 {required_images} 张图片哦")
 
         # 确保图像数量不超过布局容量
         if len(images) > required_images:
             images = images[:required_images]
 
-        # 将PyTorch张量转换为PIL图像，并根据长边设置调整尺寸
+        # 将PyTorch张量转换为PIL图像, 并根据长边设置调整尺寸
         pil_images = []
         for img_tensor in images:
             # 将tensor转换为numpy数组
@@ -995,7 +997,7 @@ class NakuNode_故事板输出:
             img_array = np.squeeze(i, axis=0) if i.shape[0] == 1 else i
             img = Image.fromarray(np.clip(img_array, 0, 255).astype(np.uint8))
 
-            # 如果设置了长边尺寸，则调整图像大小
+            # 如果设置了长边尺寸, 则调整图像大小
             if 长边尺寸 > 0:
                 original_width, original_height = img.size
                 if original_width > original_height:  # 横向图片
@@ -1013,6 +1015,23 @@ class NakuNode_故事板输出:
 
             pil_images.append(img)
 
+        # 确定背景色
+        if 图片间隔颜色 == "black":
+            bg_color = (0, 0, 0)
+        elif 图片间隔颜色 == "white":
+            bg_color = (255, 255, 255)
+        else:  # gray
+            bg_color = (128, 128, 128)
+
+        # 为每张图片添加序号标题栏 (如果 title_height > 0)
+        if title_height > 0:
+            titled_images = []
+            for idx, img in enumerate(pil_images):
+                title_text = f'{idx + 1:02d}'  # 生成序号 01, 02, 03...
+                titled_img = self.add_storyboard_title(img, title_height, title_text, title_align, bg_color)
+                titled_images.append(titled_img)
+            pil_images = titled_images
+
         # 计算单个图像的最大尺寸以适应网格
         max_width = max_height = 0
         for img in pil_images:
@@ -1023,14 +1042,6 @@ class NakuNode_故事板输出:
         spacing = 间隔像素  # 使用用户设置的间距像素
         grid_width = cols * max_width + (cols - 1) * spacing
         grid_height = rows * max_height + (rows - 1) * spacing
-
-        # 确定背景色
-        if 图片间隔颜色 == "black":
-            bg_color = (0, 0, 0)
-        elif 图片间隔颜色 == "white":
-            bg_color = (255, 255, 255)
-        else:  # gray
-            bg_color = (128, 128, 128)
 
         grid_img = Image.new('RGB', (grid_width, grid_height), color=bg_color)
 
@@ -1043,15 +1054,15 @@ class NakuNode_故事板输出:
             x_offset = col * (max_width + spacing)
             y_offset = row * (max_height + spacing)
 
-            # 如果图像小于最大尺寸，则居中放置
+            # 如果图像小于最大尺寸, 则居中放置
             paste_x = x_offset + (max_width - img.width) // 2
             paste_y = y_offset + (max_height - img.height) // 2
 
             grid_img.paste(img, (paste_x, paste_y))
 
-        # 添加边框（边框宽度等于间隔像素，颜色与图片间隔颜色相同）
+        # 添加边框（边框宽度等于间隔像素, 颜色与图片间隔颜色相同）
         if spacing > 0:
-            # 创建一个新的图像，尺寸更大，用于添加边框
+            # 创建一个新的图像, 尺寸更大, 用于添加边框
             bordered_width = grid_width + 2 * spacing
             bordered_height = grid_height + 2 * spacing
             bordered_img = Image.new('RGB', (bordered_width, bordered_height), color=bg_color)
@@ -1078,6 +1089,53 @@ class NakuNode_故事板输出:
 
         return (output_tensor, filepath)
 
+    def add_storyboard_title(self, img, title_height, title_text, title_align, bg_color):
+        """为故事板添加标题栏"""
+        from PIL import ImageDraw, ImageFont
+        
+        width, height = img.size
+        
+        # 创建新图像, 包含标题栏
+        new_img = Image.new("RGB", (width, height + title_height), color=bg_color)
+        new_img.paste(img, (0, title_height))
+        
+        # 添加文字
+        draw = ImageDraw.Draw(new_img)
+        
+        # 尝试使用系统字体
+        try:
+            font_size = max(12, int(title_height * 0.6))
+            font = ImageFont.truetype("Arial Unicode.ttf", font_size)  # macOS
+        except IOError:
+            try:
+                font = ImageFont.truetype("DejaVuSans.ttf", font_size)  # Linux
+            except IOError:
+                try:
+                    font = ImageFont.truetype("arial.ttf", font_size)  # Windows
+                except IOError:
+                    font = ImageFont.load_default()
+        
+        # 计算文字位置（水平根据选项对齐, 垂直居中）
+        bbox = draw.textbbox((0, 0), title_text, font=font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        
+        # 根据对齐选项计算 text_x
+        if title_align == "居左":
+            text_x = 5  # 左边距 5 像素
+        elif title_align == "居右":
+            text_x = width - text_width - 5  # 右边距 5 像素
+        else:  # 居中
+            text_x = (width - text_width) // 2
+        
+        # 垂直居中（修正基线偏移）
+        text_y = (title_height - text_height) // 2 - bbox[1]
+        
+        # 绘制文字
+        draw.text((text_x, text_y), title_text, fill="white", font=font)
+        
+        return new_img
+
 
 # --------------------------------------------------------------------------------
 # 节点: NakuNode_图像组合
@@ -1091,8 +1149,9 @@ class NakuNode_图像组合:
         return {
             "required": {
                 "layout": (["横排", "竖排"], {"default": "横排"}),
-                "title_height": ("INT", {"default": 30, "min": 10, "max": 50, "step": 5}),
-                "text_option": (["修改对比", "调色对比", "字母选项"], {"default": "修改对比"}),
+                "title_height": ("INT", {"default": 30, "min": 10, "max": 100, "step": 5}),
+                "text_option": (["修改对比", "调色对比", "字母选项", "序号"], {"default": "修改对比"}),
+                "text_align": (["居左", "居中", "居右"], {"default": "居中"}),
             },
             "optional": {
                 "image1": ("IMAGE",),
@@ -1105,8 +1164,8 @@ class NakuNode_图像组合:
     FUNCTION = "combine_images"
     CATEGORY = "NakuNodes/Utils"
 
-    def combine_images(self, layout, title_height, text_option, image1=None, image2=None):
-        # 如果两个图像都为空，则返回错误或空图像
+    def combine_images(self, layout, title_height, text_option, text_align, image1=None, image2=None):
+        # 如果两个图像都为空, 则返回错误或空图像
         if image1 is None and image2 is None:
             # 创建一个空白图像作为返回值
             empty_image = torch.zeros((1, 100, 100, 3), dtype=torch.float32)
@@ -1127,12 +1186,6 @@ class NakuNode_图像组合:
             tensor = torch.from_numpy(img_array)[None,]
             return tensor
 
-        # 获取文字选项对应的标签
-        text_pairs = {
-            "横排": ("horizontal", {"修改对比": ["修改前", "修改后"], "调色对比": ["调色前", "调色后"], "字母选项": ["OP1", "OP2"]}),
-            "竖排": ("vertical", {"修改对比": ["修改前", "修改后"], "调色对比": ["调色前", "调色后"], "字母选项": ["OP1", "OP2"]})
-        }
-
         # 根据选择确定布局方向和标签
         layout_map = {"横排": "horizontal", "竖排": "vertical"}
         layout_direction = layout_map.get(layout, "horizontal")
@@ -1141,7 +1194,8 @@ class NakuNode_图像组合:
         label_map = {
             "修改对比": ["修改前", "修改后"],
             "调色对比": ["调色前", "调色后"],
-            "字母选项": ["OP1", "OP2"]
+            "字母选项": ["OP1", "OP2"],
+            "序号": ["01", "02"]  # 使用序号
         }
         labels = label_map.get(text_option, ["", ""])
 
@@ -1152,31 +1206,31 @@ class NakuNode_图像组合:
         if image2 is not None:
             pil_images.append(tensor_to_pil(image2))
 
-        # 如果只有一个图像，直接添加标题栏并返回
+        # 如果只有一个图像, 直接添加标题栏并返回
         if len(pil_images) == 1:
-            combined_img = self.add_title_bar(pil_images[0], title_height, labels[0])
+            combined_img = self.add_title_bar(pil_images[0], title_height, labels[0], text_align)
             return (pil_to_tensor(combined_img),)
 
         # 合并两个图像
         if layout_direction == "horizontal":
-            combined_img = self.combine_horizontal(pil_images[0], pil_images[1], title_height, labels)
+            combined_img = self.combine_horizontal(pil_images[0], pil_images[1], title_height, labels, text_align)
         else:
-            combined_img = self.combine_vertical(pil_images[0], pil_images[1], title_height, labels)
+            combined_img = self.combine_vertical(pil_images[0], pil_images[1], title_height, labels, text_align)
 
         return (pil_to_tensor(combined_img),)
 
-    def add_title_bar(self, img, title_height, label):
+    def add_title_bar(self, img, title_height, label, text_align="居中"):
         """为单个图像添加标题栏"""
         width, height = img.size
 
-        # 创建新图像，包含标题栏
+        # 创建新图像, 包含标题栏
         new_img = Image.new('RGB', (width, height + title_height), color='black')
         new_img.paste(img, (0, title_height))
 
         # 添加文字
         draw = ImageDraw.Draw(new_img)
 
-        # 尝试使用系统字体，如果不可用则使用默认字体
+        # 尝试使用系统字体, 如果不可用则使用默认字体
         try:
             font_size = max(12, int(title_height * 0.6))  # 字体大小根据标题栏高度调整
             font = ImageFont.truetype("Arial Unicode.ttf", font_size)  # macOS
@@ -1189,22 +1243,32 @@ class NakuNode_图像组合:
                 except IOError:
                     font = ImageFont.load_default()  # 默认字体
 
-        # 计算文字位置（左对齐，垂直居中）
+        # 计算文字位置（水平根据选项对齐, 垂直居中）
         bbox = draw.textbbox((0, 0), label, font=font)
+        text_width = bbox[2] - bbox[0]  # 获取文字的实际宽度
         text_height = bbox[3] - bbox[1]  # 获取文字的实际高度
-        text_x = 5  # 左边距5像素
-        # 垂直居中：计算文字绘制的y坐标，使文字在标题栏中垂直居中
-        text_y = (title_height - text_height) // 2
+
+        # 根据对齐选项计算 text_x
+        if text_align == "居左":
+            text_x = 5  # 左边距 5 像素
+        elif text_align == "居右":
+            text_x = width - text_width - 5  # 右边距 5 像素
+        else:  # 居中
+            text_x = (width - text_width) // 2
+
+        # 垂直居中：使用 bbox[1] 是文字顶部相对于基线的偏移, 需要减去这个偏移量
+        # text_y 是文字基线的位置, 而不是文字顶部的位置
+        text_y = (title_height - text_height) // 2 - bbox[1]
 
         # 绘制文字
         draw.text((text_x, text_y), label, fill="white", font=font)
 
         return new_img
 
-    def combine_horizontal(self, img1, img2, title_height, labels):
+    def combine_horizontal(self, img1, img2, title_height, labels, text_align="居中"):
         """水平合并两个带标题栏的图像"""
-        titled_img1 = self.add_title_bar(img1, title_height, labels[0])
-        titled_img2 = self.add_title_bar(img2, title_height, labels[1])
+        titled_img1 = self.add_title_bar(img1, title_height, labels[0], text_align)
+        titled_img2 = self.add_title_bar(img2, title_height, labels[1], text_align)
 
         # 确保两个图像高度相同
         total_width = titled_img1.width + titled_img2.width
@@ -1219,10 +1283,10 @@ class NakuNode_图像组合:
 
         return combined_img
 
-    def combine_vertical(self, img1, img2, title_height, labels):
+    def combine_vertical(self, img1, img2, title_height, labels, text_align="居中"):
         """垂直合并两个带标题栏的图像"""
-        titled_img1 = self.add_title_bar(img1, title_height, labels[0])
-        titled_img2 = self.add_title_bar(img2, title_height, labels[1])
+        titled_img1 = self.add_title_bar(img1, title_height, labels[0], text_align)
+        titled_img2 = self.add_title_bar(img2, title_height, labels[1], text_align)
 
         # 确保两个图像宽度相同
         max_width = max(titled_img1.width, titled_img2.width)
@@ -1240,8 +1304,8 @@ class NakuNode_图像组合:
 
 class NakuNode_MultiText:
     """
-    一个多文本节点，具有三个文本框和三个文本输出接口
-    当合并文本选项为True时，将三个文本框的内容合并输出到第一个输出接口
+    一个多文本节点, 具有三个文本框和三个文本输出接口
+    当合并文本选项为True时, 将三个文本框的内容合并输出到第一个输出接口
     """
     
     @classmethod
@@ -1262,11 +1326,11 @@ class NakuNode_MultiText:
 
     def process_texts(self, text1, text2, text3, 合并文本):
         if 合并文本:
-            # 如果启用合并文本，则将三个文本框的内容以换行形式合并到第一个输出
+            # 如果启用合并文本, 则将三个文本框的内容以换行形式合并到第一个输出
             merged_text = "\n".join(filter(None, [text1, text2, text3]))
             return (merged_text, "", "")
         else:
-            # 如果不启用合并，则分别输出到对应的输出接口
+            # 如果不启用合并, 则分别输出到对应的输出接口
             return (text1, text2, text3)
 
 
@@ -1278,7 +1342,7 @@ class NakuNode_MultiText:
 class NakuNode_镜头控制文字版:
     """
     VNCCS 位置控制节点
-    通过滑块控制相机位置，生成用于多视角 LoRA 的提示词
+    通过滑块控制相机位置, 生成用于多视角 LoRA 的提示词
     专为 Qwen-Image-Edit-2511-Multiple-Angles LoRA 优化
     """
 
@@ -1292,7 +1356,7 @@ class NakuNode_镜头控制文字版:
                     "max": 360,
                     "step": 45,
                     "display": "slider",
-                    "tooltip": "相机环绕角度 (0=正面，90=右侧，180=背面，270=左侧)"
+                    "tooltip": "相机环绕角度 (0=正面, 90=右侧, 180=背面, 270=左侧)"
                 }),
                 "仰角": ("INT", {
                     "default": 0,
@@ -1300,7 +1364,7 @@ class NakuNode_镜头控制文字版:
                     "max": 60,
                     "step": 30,
                     "display": "slider",
-                    "tooltip": "相机垂直角度 (-30=低角度，0=平视，30=高角度，60=俯视)"
+                    "tooltip": "相机垂直角度 (-30=低角度, 0=平视, 30=高角度, 60=俯视)"
                 }),
                 "拍摄距离": (["特写", "中景", "广角"], {
                     "default": "中景",
@@ -1375,7 +1439,7 @@ class NakuNode_镜头控制文字版:
 class NakuNode_镜头可视化控制:
     """
     VNCCS 可视化相机控制节点
-    带可视化 Widget 的交互式相机控制，支持鼠标点击选择角度
+    带可视化 Widget 的交互式相机控制, 支持鼠标点击选择角度
     """
 
     @classmethod
@@ -1454,7 +1518,7 @@ class NakuNode_镜头可视化控制:
 class NakuNodeAssetsCombine:
     """
     图片拼接节点
-    支持根据模板拼接最多9张图片，具有多种自定义选项
+    支持根据模板拼接最多9张图片, 具有多种自定义选项
     """
 
     def __init__(self):
@@ -1501,7 +1565,7 @@ class NakuNodeAssetsCombine:
         import platform
         system = platform.system()
 
-        # 尝试多种字体，按照优先级顺序
+        # 尝试多种字体, 按照优先级顺序
         font_paths = []
 
         if system == "Darwin":  # macOS
@@ -1543,7 +1607,7 @@ class NakuNodeAssetsCombine:
             except:
                 continue
 
-        # 如果都没有找到，返回默认字体
+        # 如果都没有找到, 返回默认字体
         return ImageFont.load_default()
 
     def combine_images(self, template_type, direction, long_side_pixels, border_width, border_color, output_format,
@@ -1599,10 +1663,10 @@ class NakuNodeAssetsCombine:
         num_valid_images = len(valid_images)
         
         if direction == "3x3网格拼接" and num_valid_images < 9:
-            raise ValueError("Opps，不够九张图哦")
+            raise ValueError("Opps, 不够九张图哦")
         
         if direction == "2x3网格拼接" and num_valid_images > 6:
-            raise ValueError("Opps，超过6张图片哦")
+            raise ValueError("Opps, 超过6张图片哦")
 
         # 计算拼接布局
         if direction == "横向拼接":
@@ -1610,7 +1674,7 @@ class NakuNodeAssetsCombine:
         elif direction == "竖向拼接":
             combined_img = self._vertical_layout(valid_images, border_width, border_rgb, long_side_pixels)
         elif direction == "2x3网格拼接":
-            # 即使图片数量不足6张，也要执行网格布局，缺少的图片用空白或复制现有图片填充
+            # 即使图片数量不足6张, 也要执行网格布局, 缺少的图片用空白或复制现有图片填充
             combined_img = self._grid_layout(valid_images, border_width, border_rgb, long_side_pixels)
         elif direction == "3x3网格拼接":
             # 执行3x3网格布局
@@ -1625,19 +1689,19 @@ class NakuNodeAssetsCombine:
         """横向拼接布局 - 只在图片上方和图片间添加边框"""
         total_images = len(valid_images)
 
-        # 缩放所有图片，使每张图片的长边等于指定像素
+        # 缩放所有图片, 使每张图片的长边等于指定像素
         resized_images = []
         for (img, label) in valid_images:
             # 获取原始尺寸
             orig_width, orig_height = img.size
             # 计算缩放比例
             if orig_width > orig_height:
-                # 宽大于高，以宽度为准
+                # 宽大于高, 以宽度为准
                 scale_factor = long_side_pixels / orig_width
                 new_width = long_side_pixels
                 new_height = int(orig_height * scale_factor)
             else:
-                # 高大于等于宽，以高度为准
+                # 高大于等于宽, 以高度为准
                 scale_factor = long_side_pixels / orig_height
                 new_height = long_side_pixels
                 new_width = int(orig_width * scale_factor)
@@ -1650,7 +1714,7 @@ class NakuNodeAssetsCombine:
         total_width = sum(img.size[0] for img, _ in resized_images) + (len(resized_images) - 1) * (border_width // 2)
         total_height = max(img.size[1] for img, _ in resized_images) + border_width
 
-        # 创建画布 - 使用边框颜色作为背景色，避免白色边框
+        # 创建画布 - 使用边框颜色作为背景色, 避免白色边框
         canvas = Image.new('RGB', (total_width, total_height), border_rgb)
 
         # 粘贴图片并添加标签
@@ -1671,7 +1735,7 @@ class NakuNodeAssetsCombine:
             label_area = [x_offset, 0, x_offset + img.size[0], border_width]
             draw.rectangle(label_area, fill=border_rgb)
 
-            # 添加标签文本，居左对齐
+            # 添加标签文本, 居左对齐
             text_x = x_offset + 5  # 左边距5像素
             text_y = (border_width - font_size) // 2
 
@@ -1679,14 +1743,14 @@ class NakuNodeAssetsCombine:
             try:
                 draw.text((text_x, text_y), label, fill=text_rgb, font=font)
             except UnicodeEncodeError:
-                # 如果遇到编码错误，尝试使用ASCII字符
+                # 如果遇到编码错误, 尝试使用ASCII字符
                 safe_label = label.encode('utf-8', errors='ignore').decode('utf-8')
                 draw.text((text_x, text_y), safe_label, fill=text_rgb, font=font)
 
             # 粘贴图片
             canvas.paste(img, (x_offset, border_width))
 
-            # 如果不是最后一张图片，在图片右侧添加分隔边框
+            # 如果不是最后一张图片, 在图片右侧添加分隔边框
             x_offset += img.size[0]
             if i < len(resized_images) - 1:  # 不是最后一张图片
                 # 分隔边框宽度为设定值的50%
@@ -1703,19 +1767,19 @@ class NakuNodeAssetsCombine:
         """竖向拼接布局 - 只在图片上方添加边框"""
         total_images = len(valid_images)
 
-        # 缩放所有图片，使每张图片的长边等于指定像素
+        # 缩放所有图片, 使每张图片的长边等于指定像素
         resized_images = []
         for (img, label) in valid_images:
             # 获取原始尺寸
             orig_width, orig_height = img.size
             # 计算缩放比例
             if orig_width > orig_height:
-                # 宽大于高，以宽度为准
+                # 宽大于高, 以宽度为准
                 scale_factor = long_side_pixels / orig_width
                 new_width = long_side_pixels
                 new_height = int(orig_height * scale_factor)
             else:
-                # 高大于等于宽，以高度为准
+                # 高大于等于宽, 以高度为准
                 scale_factor = long_side_pixels / orig_height
                 new_height = long_side_pixels
                 new_width = int(orig_width * scale_factor)
@@ -1728,7 +1792,7 @@ class NakuNodeAssetsCombine:
         total_width = max(img.size[0] for img, _ in resized_images)
         total_height = sum(img.size[1] for img, _ in resized_images) + len(resized_images) * border_width + (len(resized_images) - 1) * (border_width // 2)
 
-        # 创建画布 - 使用边框颜色作为背景色，避免白色边框
+        # 创建画布 - 使用边框颜色作为背景色, 避免白色边框
         canvas = Image.new('RGB', (total_width, total_height), border_rgb)
 
         # 粘贴图片并添加标签
@@ -1749,7 +1813,7 @@ class NakuNodeAssetsCombine:
             label_area = [0, y_offset, total_width, y_offset + border_width]
             draw.rectangle(label_area, fill=border_rgb)
 
-            # 添加标签文本，居左对齐
+            # 添加标签文本, 居左对齐
             text_x = 5  # 左边距5像素
             text_y = y_offset + (border_width - font_size) // 2
 
@@ -1757,7 +1821,7 @@ class NakuNodeAssetsCombine:
             try:
                 draw.text((text_x, text_y), label, fill=text_rgb, font=font)
             except UnicodeEncodeError:
-                # 如果遇到编码错误，尝试使用ASCII字符
+                # 如果遇到编码错误, 尝试使用ASCII字符
                 safe_label = label.encode('utf-8', errors='ignore').decode('utf-8')
                 draw.text((text_x, text_y), safe_label, fill=text_rgb, font=font)
 
@@ -1767,7 +1831,7 @@ class NakuNodeAssetsCombine:
             # 更新y偏移量
             y_offset += border_width + img.size[1]
 
-            # 如果不是最后一张图片，在图片下方添加分隔边框
+            # 如果不是最后一张图片, 在图片下方添加分隔边框
             if i < len(resized_images) - 1:  # 不是最后一张图片
                 # 分隔边框宽度为设定值的50%
                 separator_height = border_width // 2
@@ -1781,15 +1845,15 @@ class NakuNodeAssetsCombine:
 
     def _grid_layout(self, valid_images, border_width, border_rgb, long_side_pixels):
         """2x3网格拼接布局 - 四周统一有边框"""
-        # 如果图片数量不足6张，用空白图片填充
+        # 如果图片数量不足6张, 用空白图片填充
         num_images = len(valid_images)
         if num_images < 6:
             # 创建一个空白图片用于填充
             if num_images > 0:
                 first_img = valid_images[0][0]  # 使用第一张图片的尺寸作为参考
-                blank_img = Image.new('RGB', first_img.size, (200, 200, 200))  # 灰色背景，与实际图片相同尺寸
+                blank_img = Image.new('RGB', first_img.size, (200, 200, 200))  # 灰色背景, 与实际图片相同尺寸
             else:
-                # 如果没有有效图片，创建一个默认大小的空白图片
+                # 如果没有有效图片, 创建一个默认大小的空白图片
                 blank_img = Image.new('RGB', (long_side_pixels, long_side_pixels), (200, 200, 200))
             blank_label = "空位"
 
@@ -1800,19 +1864,19 @@ class NakuNodeAssetsCombine:
         else:
             filled_valid_images = valid_images[:6]  # 只取前6张
 
-        # 缩放所有图片，使每张图片的长边等于指定像素
+        # 缩放所有图片, 使每张图片的长边等于指定像素
         resized_images = []
         for (img, label) in filled_valid_images:
             # 获取原始尺寸
             orig_width, orig_height = img.size
             # 计算缩放比例
             if orig_width > orig_height:
-                # 宽大于高，以宽度为准
+                # 宽大于高, 以宽度为准
                 scale_factor = long_side_pixels / orig_width
                 new_width = long_side_pixels
                 new_height = int(orig_height * scale_factor)
             else:
-                # 高大于等于宽，以高度为准
+                # 高大于等于宽, 以高度为准
                 scale_factor = long_side_pixels / orig_height
                 new_height = long_side_pixels
                 new_width = int(orig_width * scale_factor)
@@ -1846,8 +1910,8 @@ class NakuNodeAssetsCombine:
         # 计算反色
         text_rgb = tuple(255 - c for c in border_rgb)
 
-        # 定义位置：2列3行，确保边框宽度一致
-        # 每个单元格的标签区域位于图片上方，高度为border_width
+        # 定义位置：2列3行, 确保边框宽度一致
+        # 每个单元格的标签区域位于图片上方, 高度为border_width
         positions = [
             (border_width, border_width),  # 第1张 - 左上 [0] - (左边框, 上边框)
             (border_width + col1_width + border_width, border_width),  # 第2张 - 右上 [1] - (左边框+第一列+中间边框, 上边框)
@@ -1873,7 +1937,7 @@ class NakuNodeAssetsCombine:
             label_area = [pos_x, pos_y, pos_x + cell_width, pos_y + border_width]
             draw.rectangle(label_area, fill=border_rgb)
 
-            # 添加标签文本，居左对齐
+            # 添加标签文本, 居左对齐
             text_x = pos_x + 5  # 左边距5像素
             text_y = pos_y + (border_width - font_size) // 2
 
@@ -1881,7 +1945,7 @@ class NakuNodeAssetsCombine:
             try:
                 draw.text((text_x, text_y), label, fill=text_rgb, font=font)
             except UnicodeEncodeError:
-                # 如果遇到编码错误，尝试使用ASCII字符
+                # 如果遇到编码错误, 尝试使用ASCII字符
                 safe_label = label.encode('utf-8', errors='ignore').decode('utf-8')
                 draw.text((text_x, text_y), safe_label, fill=text_rgb, font=font)
 
@@ -1889,8 +1953,8 @@ class NakuNodeAssetsCombine:
             canvas.paste(img, (pos_x, pos_y + border_width))
 
         # 确保底部边框存在 - 在最下方添加一行边框
-        # 实际上，由于画布高度已经包含了底部边框，所以底部边框应该自然存在
-        # 如果仍有问题，我们可以明确绘制底部边框
+        # 实际上, 由于画布高度已经包含了底部边框, 所以底部边框应该自然存在
+        # 如果仍有问题, 我们可以明确绘制底部边框
         draw = ImageDraw.Draw(canvas)
         bottom_border_area = [0, total_height - border_width, total_width, total_height]
         draw.rectangle(bottom_border_area, fill=border_rgb)
@@ -1902,25 +1966,25 @@ class NakuNodeAssetsCombine:
         # 确保有9张图片
         num_images = len(valid_images)
         if num_images < 9:
-            # 这种情况不应该发生，因为已经在主函数中检查过了
-            raise ValueError("Opps，不够九张图哦")
+            # 这种情况不应该发生, 因为已经在主函数中检查过了
+            raise ValueError("Opps, 不够九张图哦")
 
         # 只取前9张图片
         filled_valid_images = valid_images[:9]
 
-        # 缩放所有图片，使每张图片的长边等于指定像素
+        # 缩放所有图片, 使每张图片的长边等于指定像素
         resized_images = []
         for (img, label) in filled_valid_images:
             # 获取原始尺寸
             orig_width, orig_height = img.size
             # 计算缩放比例
             if orig_width > orig_height:
-                # 宽大于高，以宽度为准
+                # 宽大于高, 以宽度为准
                 scale_factor = long_side_pixels / orig_width
                 new_width = long_side_pixels
                 new_height = int(orig_height * scale_factor)
             else:
-                # 高大于等于宽，以高度为准
+                # 高大于等于宽, 以高度为准
                 scale_factor = long_side_pixels / orig_height
                 new_height = long_side_pixels
                 new_width = int(orig_width * scale_factor)
@@ -1955,8 +2019,8 @@ class NakuNodeAssetsCombine:
         # 计算反色
         text_rgb = tuple(255 - c for c in border_rgb)
 
-        # 定义位置：3列3行，确保边框宽度一致
-        # 每个单元格的标签区域位于图片上方，高度为border_width
+        # 定义位置：3列3行, 确保边框宽度一致
+        # 每个单元格的标签区域位于图片上方, 高度为border_width
         positions = [
             (border_width, border_width),  # 第1张 - 左上 [0] - (左边框, 上边框)
             (border_width + col1_width + border_width, border_width),  # 第2张 - 中上 [1] - (左边框+第一列+中间边框, 上边框)
@@ -1985,7 +2049,7 @@ class NakuNodeAssetsCombine:
             label_area = [pos_x, pos_y, pos_x + cell_width, pos_y + border_width]
             draw.rectangle(label_area, fill=border_rgb)
 
-            # 添加标签文本，居左对齐
+            # 添加标签文本, 居左对齐
             text_x = pos_x + 5  # 左边距5像素
             text_y = pos_y + (border_width - font_size) // 2
 
@@ -1993,7 +2057,7 @@ class NakuNodeAssetsCombine:
             try:
                 draw.text((text_x, text_y), label, fill=text_rgb, font=font)
             except UnicodeEncodeError:
-                # 如果遇到编码错误，尝试使用ASCII字符
+                # 如果遇到编码错误, 尝试使用ASCII字符
                 safe_label = label.encode('utf-8', errors='ignore').decode('utf-8')
                 draw.text((text_x, text_y), safe_label, fill=text_rgb, font=font)
 
