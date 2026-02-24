@@ -344,10 +344,16 @@ class NakuNode_图像标注:
     def INPUT_TYPES(s):
         input_dir = folder_paths.get_input_directory()
         files = [f for f in os.listdir(input_dir) if os.path.isfile(os.path.join(input_dir, f))]
+        
+        # 按文件修改时间排序，最新的文件排在前面
+        # 这样节点默认显示最后上传的图片
+        files_with_mtime = [(f, os.path.getmtime(os.path.join(input_dir, f))) for f in files]
+        files_with_mtime.sort(key=lambda x: x[1], reverse=True)
+        sorted_files = [f[0] for f in files_with_mtime]
 
         return {
             "required": {
-                "image": (sorted(files), {"image_upload": True}),
+                "image": (sorted_files, {"image_upload": True}),
                 "标注颜色": (["红色", "蓝色", "黄色", "白色", "黑色"], {"default": "红色"}),
             },
             "hidden": {
@@ -412,6 +418,12 @@ class NakuNode_图像标注:
                 "黑色": "#000000"
             }
             fill_color = color_map.get(标注颜色, "#FF0000")  # 默认红色
+            
+            # 根据背景颜色决定数字颜色：黄色和白色背景用黑色数字，其他用白色
+            text_color = "#000000" if 标注颜色 in ["黄色", "白色"] else "#FFFFFF"
+            
+            # 边框颜色：白色和黄色标记用黑色边框，其他用白色边框
+            border_color = "#000000" if 标注颜色 in ["白色", "黄色"] else "#FFFFFF"
 
             for idx, p in enumerate(points):
                 cx = p['x'] * w
@@ -419,7 +431,7 @@ class NakuNode_图像标注:
 
                 # 半径 30 (比原来的20增大50%)
                 r = 30
-                draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=fill_color, outline="#FFFFFF", width=3)
+                draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=fill_color, outline=border_color, width=3)
 
                 # 绘制数字
                 label = str(idx + 1)
@@ -428,14 +440,14 @@ class NakuNode_图像标注:
                     tw, th = right - left, bottom - top
                     # 在圆内居中文字
                     text_x = cx - tw / 2
-                    text_y = cy - th / 2
+                    text_y = cy - th / 2 - top
                 except:
                     # 当使用默认字体时, 尺寸可能无法准确计算, 使用预估值
                     tw, th = 38, 38  # 54 * 0.7 = 37.8, 约等于38
                     text_x = cx - 19  # 27 * 0.7 = 18.9, 约等于19
                     text_y = cy - 19  # 27 * 0.7 = 18.9, 约等于19
 
-                draw.text((text_x, text_y), label, fill="#FFFFFF", font=font)
+                draw.text((text_x, text_y), label, fill=text_color, font=font)
 
         # 4. 输出
         image_np = np.array(image_obj).astype(np.float32) / 255.0
@@ -1312,10 +1324,11 @@ class NakuNode_MultiText:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "text1": ("STRING", {"multiline": True, "default": "输入文本1\n\n\n\n", "placeholder": "输入文本1", "dynamicPrompts": True}),
-                "text2": ("STRING", {"multiline": True, "default": "输入文本2\n\n\n\n", "placeholder": "输入文本2", "dynamicPrompts": True}),
-                "text3": ("STRING", {"multiline": True, "default": "输入文本3\n\n\n\n", "placeholder": "输入文本3", "dynamicPrompts": True}),
+                "text1": ("STRING", {"multiline": True, "default": "Lora 提示词", "placeholder": "Lora 提示词", "dynamicPrompts": True}),
+                "text2": ("STRING", {"multiline": True, "default": "Prompt 输入", "placeholder": "Prompt 输入", "dynamicPrompts": True}),
+                "text3": ("STRING", {"multiline": True, "default": "Prompt 输入", "placeholder": "Prompt 输入", "dynamicPrompts": True}),
                 "合并文本": ("BOOLEAN", {"default": False, "label_on": "开启", "label_off": "关闭"}),
+                "合并方式": (["逗号分割", "句号分割", "换行合并"], {"default": "逗号分割"}),
             }
         }
 
@@ -1324,17 +1337,28 @@ class NakuNode_MultiText:
     FUNCTION = "process_texts"
     CATEGORY = CATEGORY_TYPE
 
-    def process_texts(self, text1, text2, text3, 合并文本):
+    def process_texts(self, text1, text2, text3, 合并文本,合并方式):
+        # 清理文本：移除空格和换行
+        text1 = text1.replace(" ", "").replace("\n", "").replace("\r", "")
+        text2 = text2.replace(" ", "").replace("\n", "").replace("\r", "")
+        text3 = text3.replace(" ", "").replace("\n", "").replace("\r", "")
+        
         if 合并文本:
-            # 如果启用合并文本, 则将三个文本框的内容以换行形式合并到第一个输出
-            merged_text = "\n".join(filter(None, [text1, text2, text3]))
+            # 过滤空字符串
+            texts = [t for t in [text1, text2, text3] if t]
+            # 根据合并方式进行合并
+            if 合并方式 == "逗号分割":
+                merged_text = ",".join(texts)
+            elif 合并方式 == "句号分割":
+                merged_text = "。".join(texts)
+            elif 合并方式 == "换行合并":
+                merged_text = "\n".join(texts)
+            else:
+                merged_text = ",".join(texts)
             return (merged_text, "", "")
         else:
-            # 如果不启用合并, 则分别输出到对应的输出接口
+            # 如果不启用合并，则分别输出到对应的输出接口
             return (text1, text2, text3)
-
-
-
 
 # --------------------------------------------------------------------------------
 # VNCCS Position Control Nodes (移植自 ComfyUI_VNCCS_Utils)
@@ -1528,30 +1552,24 @@ class NakuNodeAssetsCombine:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                # 拼接模板选择
-                "template_type": (["场景图拼接", "角色图拼接"], {"default": "场景图拼接"}),
-                # 拼接方向
-                "direction": (["横向拼接", "竖向拼接", "2x3网格拼接", "3x3网格拼接"], {"default": "横向拼接"}),
-                # 长边像素
-                "long_side_pixels": ("INT", {"default": 1024, "min": 512, "max": 4096}),
-                # 边框宽度
-                "border_width": ("INT", {"default": 30, "min": 20, "max": 100}),
-                # 边框颜色
-                "border_color": (["黑色", "白色", "红色", "黄色", "蓝色"], {"default": "黑色"}),
-                # 输出格式
-                "output_format": (["png", "JPEG"], {"default": "png"}),
+                "combine_mode": (["横向拼接", "竖向拼接", "2x2 网格拼接", "2x3 网格拼接", "3x3 网格拼接"], {"default": "横向拼接", "label": "拼接模式"}),
+                "long_side_pixels": ("INT", {"default": 1024, "min": 512, "max": 4096, "label": "长边像素"}),
+                "border_width": ("INT", {"default": 30, "min": 20, "max": 100, "label": "边框宽度"}),
+                "border_color": (["黑色", "白色", "红色", "黄色", "蓝色"], {"default": "黑色", "label": "边框颜色"}),
+                "output_format": (["png", "JPEG"], {"default": "png", "label": "输出格式"}),
+                "use_custom_titles": ("BOOLEAN", {"default": False, "label_on": "启用自定义标题", "label_off": "使用默认标题", "label": "自定义标题"}),
+                "custom_titles_json": ("STRING", {"default": "", "multiline": True, "placeholder": 'JSON 格式，例如：{"0": "图片 1", "1": "图片 2", ...}', "label": "自定义标题 JSON"}),
             },
             "optional": {
-                # 最多9张图片输入
-                "image_front": ("IMAGE",),
-                "image_left": ("IMAGE",),
-                "image_right": ("IMAGE",),
-                "image_high_angle": ("IMAGE",),
-                "image_low_angle": ("IMAGE",),
-                "image_back": ("IMAGE",),
-                "image_back_side": ("IMAGE",),
-                "image_detail_1": ("IMAGE",),
-                "image_detail_2": ("IMAGE",),
+                "image_front": ("IMAGE", {"label": "正面图"}),
+                "image_left": ("IMAGE", {"label": "左侧图"}),
+                "image_right": ("IMAGE", {"label": "右侧图"}),
+                "image_high_angle": ("IMAGE", {"label": "俯视图"}),
+                "image_low_angle": ("IMAGE", {"label": "仰视图"}),
+                "image_back": ("IMAGE", {"label": "背面图"}),
+                "image_back_side": ("IMAGE", {"label": "侧背面图"}),
+                "image_detail_1": ("IMAGE", {"label": "细节图 1"}),
+                "image_detail_2": ("IMAGE", {"label": "细节图 2"}),
             }
         }
 
@@ -1610,9 +1628,10 @@ class NakuNodeAssetsCombine:
         # 如果都没有找到, 返回默认字体
         return ImageFont.load_default()
 
-    def combine_images(self, template_type, direction, long_side_pixels, border_width, border_color, output_format,
+    def combine_images(self, combine_mode, long_side_pixels, border_width, border_color, output_format,
+                      use_custom_titles=False, custom_titles_json="",
                       image_front=None, image_left=None, image_right=None,
-                      image_high_angle=None, image_low_angle=None, image_back=None, 
+                      image_high_angle=None, image_low_angle=None, image_back=None,
                       image_back_side=None, image_detail_1=None, image_detail_2=None):
 
         # 将颜色名称转换为RGB值
@@ -1625,6 +1644,17 @@ class NakuNodeAssetsCombine:
         }
 
         border_rgb = color_map.get(border_color, (0, 0, 0))
+
+        # 解析自定义标题
+        custom_titles = {}
+        if use_custom_titles and custom_titles_json:
+            try:
+                custom_titles = json.loads(custom_titles_json)
+                # 确保键是字符串类型
+                custom_titles = {str(k): v for k, v in custom_titles.items()}
+            except json.JSONDecodeError as e:
+                print(f"解析自定义标题 JSON 失败：{e}")
+                custom_titles = {}
 
         # 获取所有输入的图片
         input_images = []
@@ -1653,8 +1683,16 @@ class NakuNodeAssetsCombine:
             else:
                 input_images.append(None)
 
-        # 过滤掉None图片
-        valid_images = [(img, label) for img, label in zip(input_images, labels) if img is not None]
+        # 过滤掉 None 图片，并根据 use_custom_titles 决定是否使用自定义标题
+        valid_images = []
+        for idx, (img, label) in enumerate(zip(input_images, labels)):
+            if img is not None:
+                if use_custom_titles and str(idx) in custom_titles:
+                    # 使用自定义标题
+                    valid_images.append((img, custom_titles[str(idx)]))
+                else:
+                    # 使用默认标题
+                    valid_images.append((img, label))
 
         if not valid_images:
             raise ValueError("至少需要一张输入图片")
@@ -1662,21 +1700,26 @@ class NakuNodeAssetsCombine:
         # 检查图片数量与模式匹配
         num_valid_images = len(valid_images)
         
-        if direction == "3x3网格拼接" and num_valid_images < 9:
+        if combine_mode == "3x3网格拼接" and num_valid_images < 9:
             raise ValueError("Opps, 不够九张图哦")
-        
-        if direction == "2x3网格拼接" and num_valid_images > 6:
-            raise ValueError("Opps, 超过6张图片哦")
+
+        if combine_mode == "2x3 网格拼接" and num_valid_images > 6:
+            raise ValueError("Opps, 超过 6 张图片哦")
+
+        if combine_mode == "2x2 网格拼接" and num_valid_images != 4:
+            raise ValueError("Opps，你输入的图片不是 4 张哦")
 
         # 计算拼接布局
-        if direction == "横向拼接":
+        if combine_mode == "横向拼接":
             combined_img = self._horizontal_layout(valid_images, border_width, border_rgb, long_side_pixels)
-        elif direction == "竖向拼接":
+        elif combine_mode == "竖向拼接":
             combined_img = self._vertical_layout(valid_images, border_width, border_rgb, long_side_pixels)
-        elif direction == "2x3网格拼接":
+        elif combine_mode == "2x2 网格拼接":
+            combined_img = self._grid2x2_layout(valid_images, border_width, border_rgb, long_side_pixels)
+        elif combine_mode == "2x3网格拼接":
             # 即使图片数量不足6张, 也要执行网格布局, 缺少的图片用空白或复制现有图片填充
             combined_img = self._grid_layout(valid_images, border_width, border_rgb, long_side_pixels)
-        elif direction == "3x3网格拼接":
+        elif combine_mode == "3x3网格拼接":
             # 执行3x3网格布局
             combined_img = self._grid3x3_layout(valid_images, border_width, border_rgb, long_side_pixels)
 
@@ -1961,6 +2004,109 @@ class NakuNodeAssetsCombine:
 
         return canvas
 
+    def _grid2x2_layout(self, valid_images, border_width, border_rgb, long_side_pixels):
+        """2x2 网格拼接布局 - 四周统一有边框"""
+        # 确保有 4 张图片
+        num_images = len(valid_images)
+        if num_images != 4:
+            # 这种情况不应该发生，因为已经在主函数中检查过了
+            raise ValueError("Opps，你输入的图片不是 4 张哦")
+
+        # 取前 4 张图片
+        filled_valid_images = valid_images[:4]
+
+        # 缩放所有图片，使每张图片的长边等于指定像素
+        resized_images = []
+        for (img, label) in filled_valid_images:
+            # 获取原始尺寸
+            orig_width, orig_height = img.size
+            # 计算缩放比例
+            if orig_width > orig_height:
+                # 宽大于高，以宽度为准
+                scale_factor = long_side_pixels / orig_width
+                new_width = long_side_pixels
+                new_height = int(orig_height * scale_factor)
+            else:
+                # 高大于等于宽，以高度为准
+                scale_factor = long_side_pixels / orig_height
+                new_height = long_side_pixels
+                new_width = int(orig_width * scale_factor)
+
+            # 缩放图片
+            resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            resized_images.append((resized_img, label))
+
+        # 计算网格布局尺寸
+        # 2 列 2 行 - 计算每列和每行的最大尺寸
+        col1_width = max(resized_images[i][0].size[0] for i in [0, 2])  # 第一列的最大宽度
+        col2_width = max(resized_images[i][0].size[0] for i in [1, 3])  # 第二列的最大宽度
+        row1_height = resized_images[0][0].size[1]  # 第一行的高度
+        row2_height = resized_images[2][0].size[1]  # 第二行的高度
+
+        # 计算最终画布尺寸
+        # 总宽度 = 左边框 + 第一列 + 中间边框 + 第二列 + 右边框
+        total_width = border_width + col1_width + border_width + col2_width + border_width
+        # 总高度 = 上边框 + 第一行 + 行间边框 + 第二行 + 下边框
+        total_height = border_width + row1_height + border_width + row2_height + border_width
+
+        # 创建画布 - 使用边框颜色
+        canvas = Image.new('RGB', (total_width, total_height), border_rgb)
+
+        font_size = max(12, border_width // 2)
+
+        # 加载支持中文的字体
+        font = self.get_system_font(font_size)
+
+        # 计算反色
+        text_rgb = tuple(255 - c for c in border_rgb)
+
+        # 定义位置：2 列 2 行，确保边框宽度一致
+        # 每个单元格的标签区域位于图片上方，高度为 border_width
+        positions = [
+            (border_width, border_width),  # 第 1 张 - 左上 [0]
+            (border_width + col1_width + border_width, border_width),  # 第 2 张 - 右上 [1]
+            (border_width, border_width + row1_height + border_width),  # 第 3 张 - 左下 [2]
+            (border_width + col1_width + border_width, border_width + row1_height + border_width),  # 第 4 张 - 右下 [3]
+        ]
+
+        # 绘制每个单元格
+        for i in range(4):
+            img, label = resized_images[i]
+            pos_x, pos_y = positions[i]
+
+            # 绘制标签区域（整个单元格的顶部边框区域）
+            draw = ImageDraw.Draw(canvas)
+
+            # 标签区域的坐标
+            cell_width = col1_width if i % 2 == 0 else col2_width
+            cell_height = row1_height if i < 2 else row2_height
+
+            # 标签区域：在图片上方绘制边框色块
+            label_area = [pos_x, pos_y, pos_x + cell_width, pos_y + border_width]
+            draw.rectangle(label_area, fill=border_rgb)
+
+            # 添加标签文本，居左对齐
+            text_x = pos_x + 5  # 左边距 5 像素
+            text_y = pos_y + (border_width - font_size) // 2
+
+            # 使用更好的文本渲染方法
+            try:
+                draw.text((text_x, text_y), label, fill=text_rgb, font=font)
+            except UnicodeEncodeError:
+                # 如果遇到编码错误，尝试使用 ASCII 字符
+                safe_label = label.encode('utf-8', errors='ignore').decode('utf-8')
+                draw.text((text_x, text_y), safe_label, fill=text_rgb, font=font)
+
+            # 粘贴图片
+            canvas.paste(img, (pos_x, pos_y + border_width))
+
+        # 确保底部边框存在 - 在最下方添加一行边框
+        draw = ImageDraw.Draw(canvas)
+        bottom_border_area = [0, total_height - border_width, total_width, total_height]
+        draw.rectangle(bottom_border_area, fill=border_rgb)
+
+        return canvas
+
     def _grid3x3_layout(self, valid_images, border_width, border_rgb, long_side_pixels):
         """3x3网格拼接布局 - 四周统一有边框"""
         # 确保有9张图片
@@ -2105,7 +2251,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "NakuNode_图像组合": "NakuNode_图像组合",
     "NakuNode_MultiText": "NakuNode_MultiText",
     "NakuNode_ImageSplit": "NakuNode_图像分割",
-    "NakuNodeAssetsCombine": "NakuNode_图片拼接(支持最多9张)",
+    "NakuNodeAssetsCombine": "NakuNode_图片拼接",
     "NakuNode_VideoSave": "NakuNode_视频保存",
     "NakuNode_镜头控制文字版": "NakuNode_镜头控制文字版",
     "NakuNode_镜头可视化控制": "NakuNode_镜头可视化控制",

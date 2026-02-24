@@ -34,9 +34,6 @@ app.registerExtension({
                 }
             });
 
-            // 添加颜色选择下拉菜单
-            this.colorWidget = this.addWidget("combo", "标注颜色", "红色", () => {}, { values: ["红色", "蓝色", "黄色", "白色", "黑色"] });
-
             // --- 2. 隐藏数据 Widget ---
             if (!this.widgets) this.widgets = [];
             let pWidget = this.widgets.find(w => w.name === "points_data");
@@ -201,15 +198,8 @@ app.registerExtension({
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
 
-            // 定义颜色映射
-            const colorMap = {
-                "红色": "#FF0000",
-                "蓝色": "#0000FF",
-                "黄色": "#FFFF00",
-                "白色": "#FFFFFF",
-                "黑色": "#000000"
-            };
-            const fillColor = colorMap[this.colorWidget?.value || "红色"] || "#FF0000";
+            // 前端预览使用固定红色（实际颜色由后端参数控制）
+            const fillColor = "#FF0000";
 
             for (let i = 0; i < this.points.length; i++) {
                 const p = this.points[i];

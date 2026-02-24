@@ -1,10 +1,11 @@
 # ComfyUI-NakuNode
 
-**NakuNode V3.5** ---  NakuNode is build by Naku. It can make your work more easier.
+**NakuNode V4.0** ---  NakuNode is build by Naku. It can make your work more easier.
 
 ## 介绍
 
-NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的图像处理和操作节点，使我们的操作更加直观和便捷。
+NakuNode 是一个为 ComfyUI 设计的影视制作工具集，提供了一系列实用的图像处理和各种操作节点，使我们的操作更加直观和便捷。
+<img src="https://github.com/naku-yh/ComfyUI-NakuNode/blob/main/ScreenShot/NakuNode_Tools.png" alt="FLUX2 Image Reference Node Example" width="500"/>
 
 ## 功能特性
 
@@ -26,7 +27,7 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 
 #### NakuNode_图像组合
 - 将两张图像按横向或纵向排列组合，并添加标题栏
-- 支持多种文字选项（修改对比、调色对比、字母选项）
+- 支持多种文字选项（修改对比、调色对比、字母选项）以及自定义文字标题
 
 ### 2. 绘画/标注节点
 
@@ -43,14 +44,11 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 #### NakuNode_图像标注
 - 图像标记和标注工具
 - 支持多种颜色选择（红色、蓝色、黄色、白色、黑色）
-- 标记点半径比原来增大50%
-- 标记数字比原来增大170%并加粗显示
 - 支持交互式标记（左键添加，Shift+左键删除）
 
 ### 3. 画布节点
 
 #### NakuNode_画布工具
-- 画布工具节点，用于处理画布数据
 - 支持多图层操作
 - 接收背景图像和其他图层图像作为输入
 
@@ -83,15 +81,17 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 #### NakuNode_MultiText
 - 一个多功能文本节点，具有三个独立的文本框输入
 - 提供三个对应的文本输出接口
-- 包含"合并文本"选项，当启用时将三个文本框内容以换行符分隔合并到第一个输出接口
-- 当禁用合并选项时，各文本框内容分别输出到对应接口
+- 三个文本框默认值分别为："Lora 提示词"、"Prompt 输入"、"Prompt 输入"
+- 包含"合并文本"选项，当启用时将三个文本框内容合并到第一个输出接口
+- 支持三种合并方式：逗号分割、句号分割、换行合并
 
 #### NakuNode_图片拼接
-- 支持根据模板拼接最多9张图片，具有多种自定义选项
-- 提供场景图拼接和角色图拼接两种模板
-- 支持横向拼接、竖向拼接、2x3网格拼接和3x3网格拼接四种布局方式
+- 支持场景图拼接模式，最多可拼接 9 张图片
+- 支持五种拼接模式：横向拼接、竖向拼接、2x2 网格拼接、2x3 网格拼接、3x3 网格拼接
 - 可自定义长边像素、边框宽度、边框颜色和输出格式
 - 为每张图片自动添加英文标签（Front View / Left Side View / Right Side View / High Angle View / Low Angle View / Back View / Back Side View / Detail01 / Detail02），便于识别不同视角的图像
+- 支持自定义标题功能：支持通过前端界面为每张图片设置自定义标题
+
 
 
 ### 5. 工具节点
@@ -100,7 +100,7 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 - 提供常用图像尺寸的节点
 - 支持多种宽高比（1:1, 3:2, 4:3, 16:9）
 - 可选择横屏或竖屏模式
-- 新增"启用自定义尺寸"开关，当开启时忽略预设尺寸，使用自定义的长宽数值
+- 支持"自定义尺寸"，使用自定义的长宽数值
 
 #### NakuNode_文件管理
 - 文件管理节点，支持批量重命名图像文件
@@ -170,39 +170,7 @@ NakuNode 是一个为 ComfyUI 设计的工具集，提供了一系列实用的�
 
 所有节点都可以在 ComfyUI 的节点菜单中找到，位于 "NakuNodes" 类别下。Flux2相关节点位于 "Flux2" 类别下。
 
-## 更新日志
-
-### V3.1
-- 新增 NakuNode_MultiText 节点：多文本节点，具有三个文本框和三个输出接口，支持合并文本功能
-- 新增 NakuNode_图片拼接 节点：支持根据模板拼接最多6张图片，具有多种自定义选项
-- 优化了模块导入机制，修复了相对导入问题
-- 改进了节点分类，所有新节点归类到 NakuNodes/Utils 类别
-
-### V3.2
-- 新增 NakuNode_VideoSave 节点：视频保存节点，支持多种视频格式（H.264/H.265/ProRes422/ProRes422LT/WebM/GIF）
-- 支持8bit/10bit色深选择，ProRes格式默认使用10bit
-- 默认帧率调整为25 FPS
-- 支持音频轨道合并和元数据嵌入
-- 提供视频预览功能
-
-### V3.3
-- 新增 NakuNode_ImageSplit 节点：图像分割节点，可将单张图像按指定行列数切割成多个子图像
-- 支持多种宽高比选择（16:9, 9:16, 1:1, 4:3, 3:4）
-- 可调节收缩像素以避免边缘重叠
-- 引入utils目录结构，便于节点分类管理
-
-### V3.4
-- 扩展 NakuNode_图片拼接 节点：从最多支持6张图片扩展至最多支持9张图片
-- 新增3x3网格拼接模式
-- 新增3张图片输入接口（image_low_angle、image_back、image_back_side）
-- 修改图片标签为英文（Front View / Left Side View / Right Side View / High Angle View / Low Angle View / Back View / Back Side View / Detail01 / Detail02）
-- 添加错误检查机制
-
-### V3.5
-- 新增 NakuNode_镜头控制文字版 节点：基于VNCCS 位置控制节点改造，通过滑块控制相机位置生成多视角提示词，专为 Qwen-Image-Edit-2511-Multiple-Angles LoRA 优化
-- 新增 NakuNode_镜头可视化控制 节点：基于VNCCS 可视化相机控制节点改造，带可视化 Widget 的交互式相机控制，支持鼠标点击选择角度
-- 修复镜头控制节点的变量名错误
-
 ## 鸣谢
 
 本项目中的 FastCanvas 节点基于 GitHub 作者 @LAOGOU-666 (https://github.com/LAOGOU-666) 开源的 fastcanvas 节点进行开发，在此表示感谢！
+本项目中的 VNCCS 节点基于Github 作者@AHEKOT (https://github.com/AHEKOT/ComfyUI_VNCCS) 开源的VNCCS 节点进行开发，在此表示感谢！

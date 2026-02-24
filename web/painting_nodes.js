@@ -43,6 +43,8 @@ app.registerExtension({
                         brush: this.createButton("画笔", () => this.setTool("brush")),
                         eraser: this.createButton("橡皮擦", () => this.setTool("eraser")),
                         rect: this.createButton("方框", () => this.setTool("rect")),
+                        circle: this.createButton("圆框", () => this.setTool("circle")),
+                        bucket: this.createButton("油漆桶", () => this.setTool("bucket")),
                     };
 
                     this.undoBtn = this.createButton("撤销", () => this.undo());
@@ -62,6 +64,8 @@ app.registerExtension({
                         this.toolButtons.brush,
                         this.toolButtons.eraser,
                         this.toolButtons.rect,
+                        this.toolButtons.circle,
+                        this.toolButtons.bucket,
                         this.undoBtn,
                         this.redoBtn,
                         this.colorPalette,
@@ -241,9 +245,14 @@ app.registerExtension({
 
                     if (!wasDrawing) return;
 
-                    if (this.currentTool === "rect" && !isMouseLeave) {
+                    if ((this.currentTool === "rect" || this.currentTool === "circle") && !isMouseLeave) {
                         this.previewCtx.clearRect(0, 0, this.previewCanvas.width, this.previewCanvas.height);
                         this.drawSegment(this.drawCtx, this.startPos, this.getMousePos(e));
+                    }
+
+                    // 油漆桶工具在鼠标释放时填充
+                    if (this.currentTool === "bucket") {
+                        this.floodFill(this.startPos);
                     }
 
                     this.saveState();
@@ -280,10 +289,11 @@ app.registerExtension({
                     if (this.currentTool === "brush" || this.currentTool === "eraser") {
                         this.drawSegment(this.drawCtx, this.lastPos, pos);
                         this.lastPos = pos;
-                    } else if (this.currentTool === "rect") {
+                    } else if (this.currentTool === "rect" || this.currentTool === "circle") {
                         this.previewCtx.clearRect(0, 0, this.previewCanvas.width, this.previewCanvas.height);
                         this.drawSegment(this.previewCtx, this.startPos, pos);
                     }
+                    // 油漆桶不需要绘制预览
                 }
 
                 drawSegment(ctx, from, to) {
@@ -295,6 +305,11 @@ app.registerExtension({
                     ctx.beginPath();
                     if (this.currentTool === "rect") {
                         ctx.rect(from.x, from.y, to.x - from.x, to.y - from.y);
+                        ctx.stroke();
+                    } else if (this.currentTool === "circle") {
+                        // 计算圆心和半径
+                        const radius = Math.sqrt(Math.pow(to.x - from.x, 2) + Math.pow(to.y - from.y, 2));
+                        ctx.arc(from.x, from.y, radius, 0, Math.PI * 2);
                         ctx.stroke();
                     } else {
                         ctx.lineCap = "round";
@@ -311,6 +326,90 @@ app.registerExtension({
                         x: (e.clientX - rect.left) * (this.drawCanvas.width / rect.width),
                         y: (e.clientY - rect.top) * (this.drawCanvas.height / rect.height)
                     };
+                }
+
+                floodFill(pos) {
+                    const ctx = this.drawCtx;
+                    const startX = Math.floor(pos.x);
+                    const startY = Math.floor(pos.y);
+                    const width = ctx.canvas.width;
+                    const height = ctx.canvas.height;
+
+                    // 获取起始点颜色
+                    const imageData = ctx.getImageData(0, 0, width, height);
+                    const data = imageData.data;
+                    const startIdx = (startY * width + startX) * 4;
+
+                    const startR = data[startIdx];
+                    const startG = data[startIdx + 1];
+                    const startB = data[startIdx + 2];
+                    const startA = data[startIdx + 3];
+
+                    // 解析填充颜色
+                    const fillColor = this.hexToRgb(this.currentColor);
+                    if (!fillColor) return;
+
+                    // 如果起始点颜色与填充颜色相同，则不填充
+                    if (startR === fillColor.r && startG === fillColor.g && startB === fillColor.b && startA === fillColor.a) {
+                        return;
+                    }
+
+                    // 使用栈实现的洪水填充算法
+                    const stack = [[startX, startY]];
+                    const visited = new Set();
+
+                    while (stack.length > 0) {
+                        const [x, y] = stack.pop();
+                        const key = `${x},${y}`;
+
+                        if (visited.has(key)) continue;
+                        if (x < 0 || x >= width || y < 0 || y >= height) continue;
+
+                        const idx = (y * width + x) * 4;
+                        const r = data[idx];
+                        const g = data[idx + 1];
+                        const b = data[idx + 2];
+                        const a = data[idx + 3];
+
+                        // 检查颜色是否匹配（允许一定的容差）
+                        const tolerance = 50;
+                        if (Math.abs(r - startR) > tolerance || 
+                            Math.abs(g - startG) > tolerance || 
+                            Math.abs(b - startB) > tolerance ||
+                            Math.abs(a - startA) > tolerance) {
+                            continue;
+                        }
+
+                        // 设置新颜色
+                        data[idx] = fillColor.r;
+                        data[idx + 1] = fillColor.g;
+                        data[idx + 2] = fillColor.b;
+                        data[idx + 3] = 255; // 完全不透明
+
+                        visited.add(key);
+
+                        // 添加相邻像素到栈
+                        stack.push([x + 1, y]);
+                        stack.push([x - 1, y]);
+                        stack.push([x, y + 1]);
+                        stack.push([x, y - 1]);
+                    }
+
+                    // 将修改后的图像数据放回 canvas
+                    ctx.putImageData(imageData, 0, 0);
+                }
+
+                hexToRgb(hex) {
+                    // 展开简写形式（如 #FFF -> #FFFFFF）
+                    if (hex.length === 4) {
+                        hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
+                    }
+                    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                    return result ? {
+                        r: parseInt(result[1], 16),
+                        g: parseInt(result[2], 16),
+                        b: parseInt(result[3], 16)
+                    } : null;
                 }
 
                 setTool(tool) {
@@ -664,6 +763,8 @@ app.registerExtension({
                         brush: this.createButton("画笔", () => this.setTool("brush")),
                         eraser: this.createButton("橡皮擦", () => this.setTool("eraser")),
                         rect: this.createButton("方框", () => this.setTool("rect")),
+                        circle: this.createButton("圆框", () => this.setTool("circle")),
+                        bucket: this.createButton("油漆桶", () => this.setTool("bucket")),
                     };
 
                     this.undoBtn = this.createButton("撤销", () => this.undo());
@@ -689,6 +790,8 @@ app.registerExtension({
                         this.toolButtons.brush,
                         this.toolButtons.eraser,
                         this.toolButtons.rect,
+                        this.toolButtons.circle,
+                        this.toolButtons.bucket,
                         this.undoBtn,
                         this.redoBtn,
                         this.colorPalette,
@@ -875,9 +978,14 @@ app.registerExtension({
 
                     if (!wasDrawing) return;
 
-                    if (this.currentTool === "rect" && !isMouseLeave) {
+                    if ((this.currentTool === "rect" || this.currentTool === "circle") && !isMouseLeave) {
                         this.previewCtx.clearRect(0, 0, this.previewCanvas.width, this.previewCanvas.height);
                         this.drawSegment(this.drawCtx, this.startPos, this.getMousePos(e));
+                    }
+
+                    // 油漆桶工具在鼠标释放时填充
+                    if (this.currentTool === "bucket") {
+                        this.floodFill(this.startPos);
                     }
 
                     this.saveState();
@@ -909,10 +1017,11 @@ app.registerExtension({
                     if (this.currentTool === "brush" || this.currentTool === "eraser") {
                         this.drawSegment(this.drawCtx, this.lastPos, pos);
                         this.lastPos = pos;
-                    } else if (this.currentTool === "rect") {
+                    } else if (this.currentTool === "rect" || this.currentTool === "circle") {
                         this.previewCtx.clearRect(0, 0, this.previewCanvas.width, this.previewCanvas.height);
                         this.drawSegment(this.previewCtx, this.startPos, pos);
                     }
+                    // 油漆桶不需要绘制预览
                 }
 
                 drawSegment(ctx, from, to) {
@@ -924,6 +1033,11 @@ app.registerExtension({
                     ctx.beginPath();
                     if (this.currentTool === "rect") {
                         ctx.rect(from.x, from.y, to.x - from.x, to.y - from.y);
+                        ctx.stroke();
+                    } else if (this.currentTool === "circle") {
+                        // 计算圆心和半径
+                        const radius = Math.sqrt(Math.pow(to.x - from.x, 2) + Math.pow(to.y - from.y, 2));
+                        ctx.arc(from.x, from.y, radius, 0, Math.PI * 2);
                         ctx.stroke();
                     } else {
                         ctx.lineCap = "round";
@@ -940,6 +1054,90 @@ app.registerExtension({
                         x: (e.clientX - rect.left) * (this.drawCanvas.width / rect.width),
                         y: (e.clientY - rect.top) * (this.drawCanvas.height / rect.height)
                     };
+                }
+
+                floodFill(pos) {
+                    const ctx = this.drawCtx;
+                    const startX = Math.floor(pos.x);
+                    const startY = Math.floor(pos.y);
+                    const width = ctx.canvas.width;
+                    const height = ctx.canvas.height;
+
+                    // 获取起始点颜色
+                    const imageData = ctx.getImageData(0, 0, width, height);
+                    const data = imageData.data;
+                    const startIdx = (startY * width + startX) * 4;
+
+                    const startR = data[startIdx];
+                    const startG = data[startIdx + 1];
+                    const startB = data[startIdx + 2];
+                    const startA = data[startIdx + 3];
+
+                    // 解析填充颜色
+                    const fillColor = this.hexToRgb(this.currentColor);
+                    if (!fillColor) return;
+
+                    // 如果起始点颜色与填充颜色相同，则不填充
+                    if (startR === fillColor.r && startG === fillColor.g && startB === fillColor.b && startA === fillColor.a) {
+                        return;
+                    }
+
+                    // 使用栈实现的洪水填充算法
+                    const stack = [[startX, startY]];
+                    const visited = new Set();
+
+                    while (stack.length > 0) {
+                        const [x, y] = stack.pop();
+                        const key = `${x},${y}`;
+
+                        if (visited.has(key)) continue;
+                        if (x < 0 || x >= width || y < 0 || y >= height) continue;
+
+                        const idx = (y * width + x) * 4;
+                        const r = data[idx];
+                        const g = data[idx + 1];
+                        const b = data[idx + 2];
+                        const a = data[idx + 3];
+
+                        // 检查颜色是否匹配（允许一定的容差）
+                        const tolerance = 50;
+                        if (Math.abs(r - startR) > tolerance || 
+                            Math.abs(g - startG) > tolerance || 
+                            Math.abs(b - startB) > tolerance ||
+                            Math.abs(a - startA) > tolerance) {
+                            continue;
+                        }
+
+                        // 设置新颜色
+                        data[idx] = fillColor.r;
+                        data[idx + 1] = fillColor.g;
+                        data[idx + 2] = fillColor.b;
+                        data[idx + 3] = 255; // 完全不透明
+
+                        visited.add(key);
+
+                        // 添加相邻像素到栈
+                        stack.push([x + 1, y]);
+                        stack.push([x - 1, y]);
+                        stack.push([x, y + 1]);
+                        stack.push([x, y - 1]);
+                    }
+
+                    // 将修改后的图像数据放回 canvas
+                    ctx.putImageData(imageData, 0, 0);
+                }
+
+                hexToRgb(hex) {
+                    // 展开简写形式（如 #FFF -> #FFFFFF）
+                    if (hex.length === 4) {
+                        hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
+                    }
+                    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                    return result ? {
+                        r: parseInt(result[1], 16),
+                        g: parseInt(result[2], 16),
+                        b: parseInt(result[3], 16)
+                    } : null;
                 }
 
                 setTool(tool) {
@@ -1064,3 +1262,5 @@ app.registerExtension({
 });
 
 
+
+// Updated: 2024-02-24 12:45 - Force refresh
