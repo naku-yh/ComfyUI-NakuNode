@@ -1700,7 +1700,7 @@ class NakuNodeAssetsCombine:
         # 检查图片数量与模式匹配
         num_valid_images = len(valid_images)
         
-        if combine_mode == "3x3网格拼接" and num_valid_images < 9:
+        if combine_mode == "3x3 网格拼接" and num_valid_images < 9:
             raise ValueError("Opps, 不够九张图哦")
 
         if combine_mode == "2x3 网格拼接" and num_valid_images > 6:
@@ -1716,12 +1716,16 @@ class NakuNodeAssetsCombine:
             combined_img = self._vertical_layout(valid_images, border_width, border_rgb, long_side_pixels)
         elif combine_mode == "2x2 网格拼接":
             combined_img = self._grid2x2_layout(valid_images, border_width, border_rgb, long_side_pixels)
-        elif combine_mode == "2x3网格拼接":
+        elif combine_mode == "2x3 网格拼接":
             # 即使图片数量不足6张, 也要执行网格布局, 缺少的图片用空白或复制现有图片填充
             combined_img = self._grid_layout(valid_images, border_width, border_rgb, long_side_pixels)
-        elif combine_mode == "3x3网格拼接":
+        elif combine_mode == "3x3 网格拼接":
             # 执行3x3网格布局
             combined_img = self._grid3x3_layout(valid_images, border_width, border_rgb, long_side_pixels)
+        else:
+            # 未知的拼接模式，使用横向拼接作为默认
+            print(f"警告：未知的拼接模式 '{combine_mode}'，使用横向拼接作为默认")
+            combined_img = self._horizontal_layout(valid_images, border_width, border_rgb, long_side_pixels)
 
         # 将PIL图像转换回PyTorch张量
         combined_tensor = torch.from_numpy(np.array(combined_img).astype(np.float32) / 255.0).unsqueeze(0)
@@ -1887,7 +1891,7 @@ class NakuNodeAssetsCombine:
         return canvas
 
     def _grid_layout(self, valid_images, border_width, border_rgb, long_side_pixels):
-        """2x3网格拼接布局 - 四周统一有边框"""
+        """2x3 网格拼接布局 - 四周统一有边框"""
         # 如果图片数量不足6张, 用空白图片填充
         num_images = len(valid_images)
         if num_images < 6:
@@ -2108,7 +2112,7 @@ class NakuNodeAssetsCombine:
         return canvas
 
     def _grid3x3_layout(self, valid_images, border_width, border_rgb, long_side_pixels):
-        """3x3网格拼接布局 - 四周统一有边框"""
+        """3x3 网格拼接布局 - 四周统一有边框"""
         # 确保有9张图片
         num_images = len(valid_images)
         if num_images < 9:
