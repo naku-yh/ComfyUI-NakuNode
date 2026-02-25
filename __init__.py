@@ -33,6 +33,31 @@ print("  - Flux2AIO 节点：Flux2 一体化节点，集成模型加载、LoRA�
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 WEB_DIRECTORY = "web"
+
+# 国际化支持 - 加载翻译文件
+def load_translation(lang="zh"):
+    """加载指定语言的翻译文件"""
+    locales_dir = os.path.join(os.path.dirname(__file__), "locales", lang)
+    if not os.path.exists(locales_dir):
+        return {}
+    
+    translation = {}
+    for file in os.listdir(locales_dir):
+        if file.endswith(".json"):
+            try:
+                with open(os.path.join(locales_dir, file), 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    translation.update(data)
+            except Exception as e:
+                print(f"Error loading translation {lang}/{file}: {e}")
+    return translation
+
+# 加载中英文翻译
+TRANSLATIONS = {
+    "zh": load_translation("zh"),
+    "en": load_translation("en"),
+}
+
 python = sys.executable
 
 def get_ext_dir(subpath=None, mkdir=False):
@@ -133,3 +158,7 @@ except Exception as e:
 
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
+
+# ComfyUI 国际化支持 - 导出翻译字典
+# ComfyUI 会查找 NODE_DISPLAY_NAME_MAPPINGS 字典来显示节点名称和描述
+# 通过在节点目录中添加 locales 文件夹，ComfyUI 会自动加载翻译

@@ -1,0 +1,150 @@
+{
+  "Flux2AIO": {
+    "display_name": "NakuNode Flux2AIO",
+    "description": "Flux2 All-In-One Node - Integrated node with main model, VAE, CLIP, 4 LoRAs, 5 image inputs, positive/negative prompts, KSampler and VAE decode. Supports text-to-image/image editing dual modes with image reference feature",
+    "inputs": {
+      "generation_mode": {
+        "name": "Generation Mode",
+        "tooltip": "Generation Mode - Select text-to-image or image editing mode"
+      },
+      "image_reference_strength": {
+        "name": "Image Reference Strength",
+        "tooltip": "Image Reference Strength - Controls the influence of input images on the generation result (0.0-2.0)"
+      },
+      "auraflow_shift": {
+        "name": "AuraFlow Shift",
+        "tooltip": "AuraFlow Shift - Sampling shift parameter for Flux2 model, affects speed and quality (0-100)"
+      },
+      "main_model": {
+        "name": "Main Model",
+        "tooltip": "Main Model - Flux2 main model (UNET), the core diffusion model for image generation"
+      },
+      "vae_model": {
+        "name": "VAE Model",
+        "tooltip": "VAE Model - Variational Autoencoder for encoding/decoding latent space to visible images"
+      },
+      "clip_model": {
+        "name": "CLIP Model",
+        "tooltip": "CLIP Model - Text encoder that converts text prompts into conditions the model can understand"
+      },
+      "lora_01": {
+        "name": "LoRA 1",
+        "tooltip": "LoRA 1 - First LoRA model for style or feature fine-tuning"
+      },
+      "lora_01_strength": {
+        "name": "LoRA 1 Strength",
+        "tooltip": "LoRA 1 Strength - Influence strength of LoRA 1 on the model (-10.0 to 10.0)"
+      },
+      "lora_02": {
+        "name": "LoRA 2",
+        "tooltip": "LoRA 2 - Second LoRA model"
+      },
+      "lora_02_strength": {
+        "name": "LoRA 2 Strength",
+        "tooltip": "LoRA 2 Strength - Influence strength of LoRA 2 on the model (-10.0 to 10.0)"
+      },
+      "lora_03": {
+        "name": "LoRA 3",
+        "tooltip": "LoRA 3 - Third LoRA model"
+      },
+      "lora_03_strength": {
+        "name": "LoRA 3 Strength",
+        "tooltip": "LoRA 3 Strength - Influence strength of LoRA 3 on the model (-10.0 to 10.0)"
+      },
+      "lora_04": {
+        "name": "LoRA 4",
+        "tooltip": "LoRA 4 - Fourth LoRA model"
+      },
+      "lora_04_strength": {
+        "name": "LoRA 4 Strength",
+        "tooltip": "LoRA 4 Strength - Influence strength of LoRA 4 on the model (-10.0 to 10.0)"
+      },
+      "positive": {
+        "name": "Positive Prompt",
+        "tooltip": "Positive Prompt - Text prompt describing desired image content and features"
+      },
+      "negative": {
+        "name": "Negative Prompt",
+        "tooltip": "Negative Prompt - Text prompt describing image elements or features to avoid"
+      },
+      "width": {
+        "name": "Width",
+        "tooltip": "Width - Generated image width (64-8192, multiple of 8)"
+      },
+      "height": {
+        "name": "Height",
+        "tooltip": "Height - Generated image height (64-8192, multiple of 8)"
+      },
+      "batch_size": {
+        "name": "Batch Size",
+        "tooltip": "Batch Size - Number of images to generate at once"
+      },
+      "seed": {
+        "name": "Random Seed",
+        "tooltip": "Random Seed - Controls randomness, same seed produces same image"
+      },
+      "steps": {
+        "name": "Steps",
+        "tooltip": "Steps - Number of iterations in the denoising process, more steps usually means better quality but slower"
+      },
+      "cfg": {
+        "name": "CFG Scale",
+        "tooltip": "CFG - Classifier-Free Guidance scale, controls prompt adherence (higher = more faithful but may reduce quality)"
+      },
+      "sampler_name": {
+        "name": "Sampler",
+        "tooltip": "Sampler - Sampling algorithm type, affects generation speed, quality and style"
+      },
+      "scheduler": {
+        "name": "Scheduler",
+        "tooltip": "Scheduler - Controls the method of gradually removing noise"
+      },
+      "denoise": {
+        "name": "Denoise Strength",
+        "tooltip": "Denoise Strength - Degree of denoising (0.0-1.0), lower values preserve more original content in image editing mode"
+      },
+      "image1": {
+        "name": "Image 1 (Main)",
+        "tooltip": "Image 1 (Main) - Primary reference image, used as the editing target in image editing mode"
+      },
+      "image2": {
+        "name": "Image 2",
+        "tooltip": "Image 2 - Second reference image"
+      },
+      "image3": {
+        "name": "Image 3",
+        "tooltip": "Image 3 - Third reference image"
+      },
+      "image4": {
+        "name": "Image 4",
+        "tooltip": "Image 4 - Fourth reference image"
+      },
+      "image5": {
+        "name": "Image 5",
+        "tooltip": "Image 5 - Fifth reference image"
+      },
+      "latent": {
+        "name": "Latent (Optional)",
+        "tooltip": "Latent - External latent input, if provided will use this instead of creating new one"
+      },
+      "fast_speed_mode": {
+        "name": "Fast Speed Mode",
+        "tooltip": "Fast Speed Mode - When enabled, same model config won't reload, suitable for continuous generation (only seed/prompt changes)"
+      },
+      "Memory_cleanup": {
+        "name": "Memory Cleanup",
+        "tooltip": "Memory Cleanup - Clean up VRAM after generation, suitable for low VRAM scenarios or switching to other nodes"
+      }
+    },
+    "outputs": {
+      "latent": {
+        "name": "Latent",
+        "tooltip": "Latent - Generated latent space data, can be passed to VAE decoder or other processing nodes"
+      },
+      "image": {
+        "name": "Image",
+        "tooltip": "Image - Final generated visible image output"
+      }
+    }
+  }
+}

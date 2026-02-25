@@ -5,6 +5,27 @@ import comfy.samplers
 import folder_paths
 from nodes import LoraLoader, KSampler, EmptyLatentImage, UNETLoader, VAELoader, CLIPLoader, CLIPTextEncode
 
+# 全局模型缓存（跨节点实例共享）
+GLOBAL_MODEL_CACHE = {
+    "model": None,
+    "clip": None,
+    "vae": None,
+    "config": {
+        "main_model": None,
+        "clip_model": None,
+        "vae_model": None,
+        "lora_01": None,
+        "lora_01_strength": 0,
+        "lora_02": None,
+        "lora_02_strength": 0,
+        "lora_03": None,
+        "lora_03_strength": 0,
+        "lora_04": None,
+        "lora_04_strength": 0,
+        "auraflow_shift": 3.0,
+    }
+}
+
 
 def get_best_attention():
     """
@@ -32,6 +53,18 @@ def get_best_attention():
     return "sdpa"
 
 
+def unload_models_to_cpu():
+    """
+    将模型卸载到 CPU 以释放 GPU 显存
+    用于连续生成时快速切换
+    """
+    try:
+        model_management.cleanup_models(keep_clone_weights_loaded=False)
+        print("\033[96m[NakuNodeFlux2]\033[0m 模型已卸载到 CPU")
+    except Exception as e:
+        print(f"\033[93m[NakuNodeFlux2]\033[0m 卸载模型时出错：{e}")
+
+
 class Flux2AIO:
     """
     NakuNode Flux2AIO - Flux2 All-In-One Node for ComfyUI
@@ -40,12 +73,17 @@ class Flux2AIO:
 
     图片参考功能：参考 NakuNode Flux2 Image Reference 节点，
     将输入图像的特征注入到 conditioning 中，实现图像参考生成
+    
+    优化特性:
+    - 全局模型缓存：避免重复加载相同模型
+    - 智能卸载：生成完成后可选择是否卸载模型到 CPU
+    - 快速连续生成：仅当参数变化时重新加载模型
     """
 
-    def __init__(self):
-        self.loaded_loras = None
-        # 模型缓存（ComfyUI 会自动缓存，这里不需要额外缓存）
-        self._model_cache = {}
+    # 类变量，用于跨实例共享缓存状态
+    _cache_enabled = True
+    _unload_after_generate = False  # 生成后是否卸载到 CPU
+    _last_config = None  # 记录上次的配置
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -55,8 +93,8 @@ class Flux2AIO:
                 "generation_mode": (["文生图", "图片编辑"], {"default": "图片编辑"}),
                 # 图片参考强度（仅图片编辑模式有效）
                 "image_reference_strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.01, "display": "slider", "label": "图片参考强度"}),
-                # AuraFlow 模型采样偏移（可选）
-                "auraflow_shift": ("FLOAT", {"default": 3.0, "min": 0.0, "max": 100.0, "step": 0.01, "display": "slider", "label": "AuraFlow 采样偏移"}),
+                # AuraFlow 模型采样偏移（数字输入）
+                "auraflow_shift": ("FLOAT", {"default": 3.0, "min": 0.0, "max": 100.0, "step": 0.1, "label": "AuraFlow 采样偏移"}),
                 # 主模型选择
                 "main_model": (cls.get_flux2_models(), {"label": "主模型"}),
                 # VAE 模型选择
@@ -76,17 +114,20 @@ class Flux2AIO:
                 "positive": ("STRING", {"multiline": True, "default": "", "label": "正面提示词"}),
                 # 负面提示词
                 "negative": ("STRING", {"multiline": True, "default": "", "label": "负面提示词"}),
-                # 空 latent 图像参数
-                "empty_latent_width": ("INT", {"default": 512, "min": 64, "max": 8192, "step": 8, "label": "宽度"}),
-                "empty_latent_height": ("INT", {"default": 512, "min": 64, "max": 8192, "step": 8, "label": "高度"}),
+                # 图像尺寸参数
+                "width": ("INT", {"default": 512, "min": 64, "max": 8192, "step": 8, "label": "宽度"}),
+                "height": ("INT", {"default": 512, "min": 64, "max": 8192, "step": 8, "label": "高度"}),
                 "batch_size": ("INT", {"default": 1, "min": 1, "max": 4096, "label": "批次数量"}),
                 # KSampler 参数
                 "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff, "label": "随机种子"}),
-                "steps": ("INT", {"default": 8, "min": 1, "max": 10000, "label": "采样步数"}),
+                "steps": ("INT", {"default": 5, "min": 1, "max": 10000, "label": "采样步数"}),
                 "cfg": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 100.0, "step": 0.1, "label": "CFG 值"}),
                 "sampler_name": (cls.get_samplers(), {"default": "euler", "label": "采样器"}),
                 "scheduler": (cls.get_schedulers(), {"default": "simple", "label": "调度器"}),
                 "denoise": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01, "display": "slider", "label": "降噪强度"}),
+                # 模型管理（放在最下方）
+                "fast_speed_mode": ("BOOLEAN", {"default": True, "label": "快速模式", "tooltip": "启用后，相同模型配置不会重复加载，适合连续生成"}),
+                "Memory_cleanup": ("BOOLEAN", {"default": False, "label": "显存清理", "tooltip": "生成完成后清理显存，适合显存不足的场景"}),
             },
             "optional": {
                 # 5 个图片输入接口
@@ -196,6 +237,52 @@ class Flux2AIO:
         model, clip = lora.load_lora(model, clip, lora_name, strength_model, strength_clip)
         return model, clip
 
+    def check_cache_valid(self, current_config):
+        """
+        检查缓存是否有效
+        比较当前配置与上次配置，判断是否需要重新加载模型
+        """
+        if not self._cache_enabled:
+            return False
+        
+        if GLOBAL_MODEL_CACHE["model"] is None:
+            return False
+        
+        # 比较关键配置
+        last_config = GLOBAL_MODEL_CACHE["config"]
+        
+        # 检查主模型、CLIP、VAE 是否变化
+        if (last_config["main_model"] != current_config["main_model"] or
+            last_config["clip_model"] != current_config["clip_model"] or
+            last_config["vae_model"] != current_config["vae_model"]):
+            return False
+        
+        # 检查 LoRA 配置是否变化
+        for i in range(1, 5):
+            lora_key = f"lora_{i:02d}"
+            strength_key = f"lora_{i:02d}_strength"
+            if (last_config.get(lora_key) != current_config.get(lora_key) or
+                last_config.get(strength_key) != current_config.get(strength_key)):
+                return False
+        
+        # 检查 AuraFlow Shift 是否变化
+        if last_config.get("auraflow_shift") != current_config.get("auraflow_shift"):
+            return False
+        
+        return True
+
+    def update_cache(self, model, clip, vae, config):
+        """更新缓存"""
+        GLOBAL_MODEL_CACHE["model"] = model
+        GLOBAL_MODEL_CACHE["clip"] = clip
+        GLOBAL_MODEL_CACHE["vae"] = vae
+        GLOBAL_MODEL_CACHE["config"] = config.copy()
+        self._last_config = config.copy()
+
+    def get_cached_models(self):
+        """获取缓存的模型"""
+        return GLOBAL_MODEL_CACHE["model"], GLOBAL_MODEL_CACHE["clip"], GLOBAL_MODEL_CACHE["vae"]
+
     def encode_images_to_reference_latents(self, vae, images):
         """
         将输入图像编码为参考 latent
@@ -300,29 +387,54 @@ class Flux2AIO:
                 lora_03, lora_03_strength, lora_04, lora_04_strength,
                 generation_mode, image_reference_strength, auraflow_shift,
                 positive, negative,
-                empty_latent_width, empty_latent_height, batch_size,
+                width, height, batch_size,
                 seed, steps, cfg, sampler_name, scheduler, denoise,
+                fast_speed_mode=True, Memory_cleanup=False,
                 image1=None, image2=None, image3=None, image4=None, image5=None,
                 latent=None):
         """
         主处理函数
-        1. 加载主模型、VAE、CLIP
-        2. 应用 LoRA
-        3. 编码提示词
-        4. 处理图像输入（如果有）
-        5. 运行 KSampler
-        6. VAE 解码
+        1. 检查缓存，决定是否需要重新加载模型
+        2. 加载主模型、VAE、CLIP（或使用缓存）
+        3. 应用 LoRA
+        4. 编码提示词
+        5. 处理图像输入（如果有）
+        6. 运行 KSampler
+        7. VAE 解码
+        8. 根据设置决定是否卸载模型到 CPU
         """
         # 检测并设置最佳的 cross attention 实现
         attention_type = get_best_attention()
 
         device = model_management.get_torch_device()
 
+        # 设置缓存选项
+        self._cache_enabled = fast_speed_mode
+        self._unload_after_generate = Memory_cleanup
+
+        # 构建当前配置（用于缓存判断）
+        current_config = {
+            "main_model": main_model,
+            "clip_model": clip_model,
+            "vae_model": vae_model,
+            "lora_01": lora_01,
+            "lora_01_strength": lora_01_strength,
+            "lora_02": lora_02,
+            "lora_02_strength": lora_02_strength,
+            "lora_03": lora_03,
+            "lora_03_strength": lora_03_strength,
+            "lora_04": lora_04,
+            "lora_04_strength": lora_04_strength,
+            "auraflow_shift": auraflow_shift,
+        }
+
         # 简化的输出（仅关键信息）
         print("\033[96m[NakuNodeFlux2]\033[0m " + "=" * 50)
         print(f"\033[96m[NakuNodeFlux2]\033[0m 模式：{generation_mode} | 主模型：{main_model}")
         print(f"\033[96m[NakuNodeFlux2]\033[0m VAE: {vae_model} | CLIP: {clip_model}")
         print(f"\033[96m[NakuNodeFlux2]\033[0m 采样偏移：{auraflow_shift} | 参考强度：{image_reference_strength}")
+        print(f"\033[96m[NakuNodeFlux2]\033[0m Fast Speed Mode: {'ON' if fast_speed_mode else 'OFF'} | Memory Cleanup: {'ON' if Memory_cleanup else 'OFF'}")
+        
         # LoRA 信息
         lora_info = []
         for lora_name, lora_str in [
@@ -335,28 +447,40 @@ class Flux2AIO:
             print(f"\033[96m[NakuNodeFlux2]\033[0m LoRA: {', '.join(lora_info)}")
         else:
             print(f"\033[96m[NakuNodeFlux2]\033[0m LoRA: 无")
-        print(f"\033[96m[NakuNodeFlux2]\033[0m 尺寸：{empty_latent_width}x{empty_latent_height} | 步数：{steps} | CFG: {cfg}")
+        print(f"\033[96m[NakuNodeFlux2]\033[0m 尺寸：{width}x{height} | 步数：{steps} | CFG: {cfg}")
         print(f"\033[96m[NakuNodeFlux2]\033[0m 种子：{seed} | 采样器：{sampler_name} | 调度器：{scheduler}")
         if generation_mode == "图片编辑":
             img_count = sum(1 for img in [image1, image2, image3, image4, image5] if img is not None)
             print(f"\033[96m[NakuNodeFlux2]\033[0m 输入图像：{img_count} 张")
-        print("\033[96m[NakuNodeFlux2]\033[0m " + "=" * 50)
 
-        # 1. 加载主模型 (MODEL) - ComfyUI 会自动缓存
-        model = self.load_unet(main_model)
+        # 检查缓存是否有效
+        cache_hit = self.check_cache_valid(current_config)
+        if cache_hit:
+            print("\033[96m[NakuNodeFlux2]\033[0m ✓ 使用缓存的模型（跳过加载）")
+            model, clip, vae = self.get_cached_models()
+        else:
+            print("\033[96m[NakuNodeFlux2]\033[0m 加载模型...")
+            print("\033[96m[NakuNodeFlux2]\033[0m " + "=" * 50)
+            
+            # 1. 加载主模型 (MODEL)
+            model = self.load_unet(main_model)
 
-        # 2. 加载 CLIP - ComfyUI 会自动缓存
-        clip = self.load_clip(clip_model)
+            # 2. 加载 CLIP
+            clip = self.load_clip(clip_model)
 
-        # 3. 应用 LoRA 堆栈（按顺序应用）
-        print("\033[96m[NakuNodeFlux2]\033[0m 应用 LoRA...")
-        model, clip = self.apply_lora(model, clip, lora_01, lora_01_strength, lora_01_strength)
-        model, clip = self.apply_lora(model, clip, lora_02, lora_02_strength, lora_02_strength)
-        model, clip = self.apply_lora(model, clip, lora_03, lora_03_strength, lora_03_strength)
-        model, clip = self.apply_lora(model, clip, lora_04, lora_04_strength, lora_04_strength)
+            # 3. 应用 LoRA 堆栈（按顺序应用）
+            print("\033[96m[NakuNodeFlux2]\033[0m 应用 LoRA...")
+            model, clip = self.apply_lora(model, clip, lora_01, lora_01_strength, lora_01_strength)
+            model, clip = self.apply_lora(model, clip, lora_02, lora_02_strength, lora_02_strength)
+            model, clip = self.apply_lora(model, clip, lora_03, lora_03_strength, lora_03_strength)
+            model, clip = self.apply_lora(model, clip, lora_04, lora_04_strength, lora_04_strength)
 
-        # 4. 加载 VAE - ComfyUI 会自动缓存
-        vae = self.load_vae(vae_model)
+            # 4. 加载 VAE
+            vae = self.load_vae(vae_model)
+            
+            # 更新缓存
+            if self._cache_enabled:
+                self.update_cache(model, clip, vae, current_config)
 
         # 5. 编码提示词（使用 CLIPTextEncode 节点）
         clip_encoder = CLIPTextEncode()
@@ -384,7 +508,7 @@ class Flux2AIO:
             # 文生图模式：忽略图像输入，创建空 latent
             if latent is None:
                 # EmptyLatentImage().generate() 返回 (LATENT,) 元组
-                latent = EmptyLatentImage().generate(empty_latent_width, empty_latent_height, batch_size)[0]
+                latent = EmptyLatentImage().generate(width, height, batch_size)[0]
 
         # 7. 应用 ModelSamplingAuraFlow（Flux2 需要）
         # 注意：某些 ComfyUI 版本可能不需要此步骤
@@ -438,6 +562,12 @@ class Flux2AIO:
         # 10. VAE 解码
         print(f"\033[96m[NakuNodeFlux2]\033[0m 解码中...")
         image_output = vae.decode(latent_output["samples"])
+        
+        # 11. 根据设置决定是否卸载模型到 CPU
+        if self._unload_after_generate:
+            print("\033[96m[NakuNodeFlux2]\033[0m 卸载模型到 CPU（释放显存）...")
+            unload_models_to_cpu()
+        
         print(f"\033[96m[NakuNodeFlux2]\033[0m 完成！")
 
         return (latent_output, image_output)
@@ -448,5 +578,5 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    'Flux2AIO': 'NakuNode Flux2AIO',
+    'Flux2AIO': 'Flux2AIO',
 }

@@ -1,0 +1,150 @@
+{
+  "Flux2AIO": {
+    "display_name": "NakuNode Flux2AIO",
+    "description": "Flux2 一体化节点 - 集成主模型、VAE、CLIP、4 个 LoRA、5 张图像输入、正负面提示词、KSampler 和 VAE 解码的全流程节点，支持文生图/图片编辑双模式，带图片参考功能",
+    "inputs": {
+      "generation_mode": {
+        "name": "生成模式",
+        "tooltip": "生成模式 - 选择文生图或图片编辑模式"
+      },
+      "image_reference_strength": {
+        "name": "图片参考强度",
+        "tooltip": "图片参考强度 - 控制输入图像对生成结果的影响程度 (0.0-2.0)"
+      },
+      "auraflow_shift": {
+        "name": "AuraFlow 采样偏移",
+        "tooltip": "AuraFlow 采样偏移 - Flux2 模型的采样偏移参数，影响生成速度和质量 (0-100)"
+      },
+      "main_model": {
+        "name": "主模型",
+        "tooltip": "主模型 - Flux2 主模型（UNET），图像生成的核心扩散模型"
+      },
+      "vae_model": {
+        "name": "VAE 模型",
+        "tooltip": "VAE 模型 - 变分自编码器，用于将潜空间编码/解码为可见图像"
+      },
+      "clip_model": {
+        "name": "CLIP 模型",
+        "tooltip": "CLIP 模型 - 文本编码器，将文本提示转换为模型可理解的条件"
+      },
+      "lora_01": {
+        "name": "LoRA 1",
+        "tooltip": "LoRA 1 - 第一个 LoRA 模型，用于风格或特征微调"
+      },
+      "lora_01_strength": {
+        "name": "LoRA 1 强度",
+        "tooltip": "LoRA 1 强度 - LoRA 1 对模型的影响强度 (-10.0 到 10.0)"
+      },
+      "lora_02": {
+        "name": "LoRA 2",
+        "tooltip": "LoRA 2 - 第二个 LoRA 模型"
+      },
+      "lora_02_strength": {
+        "name": "LoRA 2 强度",
+        "tooltip": "LoRA 2 强度 - LoRA 2 对模型的影响强度 (-10.0 到 10.0)"
+      },
+      "lora_03": {
+        "name": "LoRA 3",
+        "tooltip": "LoRA 3 - 第三个 LoRA 模型"
+      },
+      "lora_03_strength": {
+        "name": "LoRA 3 强度",
+        "tooltip": "LoRA 3 强度 - LoRA 3 对模型的影响强度 (-10.0 到 10.0)"
+      },
+      "lora_04": {
+        "name": "LoRA 4",
+        "tooltip": "LoRA 4 - 第四个 LoRA 模型"
+      },
+      "lora_04_strength": {
+        "name": "LoRA 4 强度",
+        "tooltip": "LoRA 4 强度 - LoRA 4 对模型的影响强度 (-10.0 到 10.0)"
+      },
+      "positive": {
+        "name": "正面提示词",
+        "tooltip": "正面提示词 - 描述期望图像内容和特征的文本提示"
+      },
+      "negative": {
+        "name": "负面提示词",
+        "tooltip": "负面提示词 - 描述要避免的图像元素或特征的文本提示"
+      },
+      "width": {
+        "name": "宽度",
+        "tooltip": "宽度 - 生成图像的宽度（64-8192，8 的倍数）"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "高度 - 生成图像的高度（64-8192，8 的倍数）"
+      },
+      "batch_size": {
+        "name": "批次数量",
+        "tooltip": "批次数量 - 一次性生成的图像数量"
+      },
+      "seed": {
+        "name": "随机种子",
+        "tooltip": "随机种子 - 控制随机性的种子，相同种子生成相同图像"
+      },
+      "steps": {
+        "name": "采样步数",
+        "tooltip": "采样步数 - 去噪过程的迭代步数，更多步数通常质量更好但更慢"
+      },
+      "cfg": {
+        "name": "CFG 值",
+        "tooltip": "CFG - 无分类器指导规模，控制提示词服从性（越高越遵从提示但可能降低画质）"
+      },
+      "sampler_name": {
+        "name": "采样器",
+        "tooltip": "采样器 - 采样算法类型，影响生成速度、质量和风格"
+      },
+      "scheduler": {
+        "name": "调度器",
+        "tooltip": "调度器 - 控制噪波逐渐去除的方法"
+      },
+      "denoise": {
+        "name": "降噪强度",
+        "tooltip": "降噪强度 - 去噪程度（0.0-1.0），图片编辑模式下降低该值保留更多原图内容"
+      },
+      "image1": {
+        "name": "图像 1（主图）",
+        "tooltip": "图像 1（主图） - 主要参考图像，图片编辑模式下作为编辑对象"
+      },
+      "image2": {
+        "name": "图像 2",
+        "tooltip": "图像 2 - 第二张参考图像"
+      },
+      "image3": {
+        "name": "图像 3",
+        "tooltip": "图像 3 - 第三张参考图像"
+      },
+      "image4": {
+        "name": "图像 4",
+        "tooltip": "图像 4 - 第四张参考图像"
+      },
+      "image5": {
+        "name": "图像 5",
+        "tooltip": "图像 5 - 第五张参考图像"
+      },
+      "latent": {
+        "name": "Latent（可选）",
+        "tooltip": "Latent - 外部潜空间输入，如提供则使用此潜空间而非创建新的"
+      },
+      "fast_speed_mode": {
+        "name": "快速模式",
+        "tooltip": "启用后，相同模型配置不会重复加载，适合连续生成（仅种子/Prompt 变化）"
+      },
+      "Memory_cleanup": {
+        "name": "显存清理",
+        "tooltip": "生成完成后清理显存，适合显存不足或需要切换其他节点的场景"
+      }
+    },
+    "outputs": {
+      "latent": {
+        "name": "Latent",
+        "tooltip": "Latent - 生成的潜空间数据，可传递给 VAE 解码或其他处理节点"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "图像 - 最终生成的可见图像输出"
+      }
+    }
+  }
+}
