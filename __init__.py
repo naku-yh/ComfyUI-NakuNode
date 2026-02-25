@@ -5,10 +5,10 @@ import sys
 import json
 
 # Print version information when loading
-print("\033[92mNakuNode V4.0\033[0m \033[93m---\033[0m \033[1;37mNakuNode is build by Naku.\033[0m It can make your work more easier.")
+print("\033[92mNakuNode V4.5\033[0m \033[93m---\033[0m \033[1;37mNakuNode is build by Naku.\033[0m It can make your work more easier.")
 
 # List of all nodes and their functions
-print("NakuNode V4.0 包含以下节点:")
+print("NakuNode V4.5 包含以下节点:")
 print("  - NakuNode_SaveImage: 保存图像，支持自定义文件名前缀、路径、格式和质量设置")
 print("  - NakuNode_常用尺寸: 提供常用的图像尺寸比例和画面模式选择")
 print("  - NakuNode_图像边框: 为图像添加指定颜色和宽度的边框")
@@ -28,6 +28,7 @@ print("  - NakuNode_镜头控制文字版：VNCCS 位置控制节点，通过滑
 print("  - NakuNode_镜头可视化控制：VNCCS 可视化相机控制节点，带可视化 Widget 的交互式相机控制")
 print("  - API节点: 基于Comfly重新编译的API节点，支持多种AI services")
 print("  - Flux2节点: 专为Flux2模型设计的图像参考节点")
+print("  - Flux2AIO 节点：Flux2 一体化节点，集成模型加载、LoRA、KSampler 和 VAE 解码")
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}

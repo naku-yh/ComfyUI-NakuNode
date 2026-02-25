@@ -1,6 +1,6 @@
 # ComfyUI-NakuNode
 
-**NakuNode V4.0** ---  NakuNode is build by Naku. It can make your work more easier.
+**NakuNode V4.5** ---  NakuNode is build by Naku. It can make your work more easier.
 
 ## 介绍
 
@@ -131,6 +131,13 @@ NakuNode 是一个为 ComfyUI 设计的影视制作工具集，提供了一系�
 - 提供视频预览功能，支持播放、暂停和下载
 
 ### 8. Flux2节点
+
+#### NakuNode Flux2AIO
+- 专为Flux2模型设计的All in one节点
+- 最多支持5张参考图像作为输入
+- 支持文生图及图片编辑
+- 内置Flux2 Image Reference
+- 节点位于 "Flux2" 类别下
 
 #### NakuNode Flux2 Image Reference
 - 专为Flux2模型设计的图像参考节点
