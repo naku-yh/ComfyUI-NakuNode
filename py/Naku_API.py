@@ -410,8 +410,8 @@ class NakuNodeAPI_Googel_Veo3:
             return ("", "", json.dumps({"code": "error", "message": error_message}))
 
 
-# --- Google Nano Banana Nodes ---
-class NakuNodeAPI_nano_banana:
+# --- Google Gemini 3 Image Node ---
+class NakuNodeAPI_Gemini3_Image:
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -1287,7 +1287,7 @@ class NakuNodeAPI_Gemini3Pro_Image:
         return {
             "required": {
                 "prompt": ("STRING", {"multiline": True}),
-                "model": (["gemini-3-pro-image-preview"], {"default": "gemini-3-pro-image-preview"}),
+                "model": (["gemini-3-pro-image-preview", "gemini-3.1-flash-image-preview"], {"default": "gemini-3-pro-image-preview"}),
                 "aspect_ratio": (["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"], {"default": "1:1"}),
                 "resolution": (["1K", "2K", "4K"], {"default": "2K"}),
             },
@@ -1445,7 +1445,7 @@ class NakuNodeAPI_Gemini3Pro_Image:
             print(f"[NakuNode] Making API request with polling mechanism...")
 
             # Make the API request - adjust endpoint as needed for the proxy service
-            conn.request("POST", "/v1beta/models/gemini-3-pro-image-preview:generateContent", payload, headers)
+            conn.request("POST", f"/v1beta/models/{model}:generateContent", payload, headers)
             res = conn.getresponse()
             initial_response_data = res.read()
             conn.close()  # Close the initial connection
@@ -5083,7 +5083,7 @@ NODE_CLASS_MAPPINGS = {
     "NakuNodeAPI_nano_banana": NakuNodeAPI_nano_banana,
     "NakuNodeAPI_nano_banana_edit": NakuNodeAPI_nano_banana_edit,
     "NakuNodeAPI_nano_banana2_edit": NakuNodeAPI_nano_banana2_edit,
-    "NakuNodeAPI_Gemini3Pro_Image": NakuNodeAPI_Gemini3Pro_Image,
+    "NakuNodeAPI_Gemini3_Image": NakuNodeAPI_Gemini3_Image,
 
     # Kling Nodes
     "NakuNodeAPI_kling_text2video": NakuNodeAPI_kling_text2video,
@@ -5116,7 +5116,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "NakuNodeAPI_nano_banana": "NakuNodeAPI nano_banana",
     "NakuNodeAPI_nano_banana_edit": "NakuNodeAPI nano_banana_edit",
     "NakuNodeAPI_nano_banana2_edit": "NakuNodeAPI nano_banana2_edit",
-    "NakuNodeAPI_Gemini3Pro_Image": "NakuNodeAPI Gemini 3 Pro Image",
+    "NakuNodeAPI_Gemini3_Image": "NakuNodeAPI Gemini3 Image",
 
     # Kling Nodes
     "NakuNodeAPI_kling_text2video": "NakuNodeAPI Kling Text2Video",
@@ -5252,7 +5252,7 @@ NODE_CLASS_MAPPINGS = {
     "NakuNodeAPI_nano_banana": NakuNodeAPI_nano_banana,
     "NakuNodeAPI_nano_banana_edit": NakuNodeAPI_nano_banana_edit,
     "NakuNodeAPI_nano_banana2_edit": NakuNodeAPI_nano_banana2_edit,
-    "NakuNodeAPI_Gemini3Pro_Image": NakuNodeAPI_Gemini3Pro_Image,
+    "NakuNodeAPI_Gemini3_Image": NakuNodeAPI_Gemini3_Image,
 
     # Kling Nodes
     "NakuNodeAPI_kling_text2video": NakuNodeAPI_kling_text2video,
@@ -5289,7 +5289,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "NakuNodeAPI_nano_banana": "NakuNodeAPI nano_banana",
     "NakuNodeAPI_nano_banana_edit": "NakuNodeAPI nano_banana_edit",
     "NakuNodeAPI_nano_banana2_edit": "NakuNodeAPI nano_banana2_edit",
-    "NakuNodeAPI_Gemini3Pro_Image": "NakuNodeAPI Gemini 3 Pro Image",
+    "NakuNodeAPI_Gemini3_Image": "NakuNodeAPI Gemini3 Image",
 
     # Kling Nodes
     "NakuNodeAPI_kling_text2video": "NakuNodeAPI Kling Text2Video",
