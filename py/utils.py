@@ -1552,7 +1552,7 @@ class NakuNodeAssetsCombine:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "combine_mode": (["横向拼接", "竖向拼接", "2x2 网格拼接", "2x3 网格拼接", "3x3 网格拼接"], {"default": "横向拼接", "label": "拼接模式"}),
+                "combine_mode": (["横向拼接", "竖向拼接", "2x2 网格拼接", "2x3 网格拼接", "3x2 网格拼接", "3x3 网格拼接"], {"default": "横向拼接", "label": "拼接模式"}),
                 "long_side_pixels": ("INT", {"default": 1024, "min": 512, "max": 4096, "label": "长边像素"}),
                 "border_width": ("INT", {"default": 30, "min": 20, "max": 100, "label": "边框宽度"}),
                 "border_color": (["黑色", "白色", "红色", "黄色", "蓝色"], {"default": "黑色", "label": "边框颜色"}),
@@ -1709,6 +1709,9 @@ class NakuNodeAssetsCombine:
         if combine_mode == "2x2 网格拼接" and num_valid_images != 4:
             raise ValueError("Opps，你输入的图片不是 4 张哦")
 
+        if combine_mode == "3x2 网格拼接" and num_valid_images != 6:
+            raise ValueError("Opps，你输入的图片不是 6 张哦")
+
         # 计算拼接布局
         if combine_mode == "横向拼接":
             combined_img = self._horizontal_layout(valid_images, border_width, border_rgb, long_side_pixels)
@@ -1719,6 +1722,9 @@ class NakuNodeAssetsCombine:
         elif combine_mode == "2x3 网格拼接":
             # 即使图片数量不足6张, 也要执行网格布局, 缺少的图片用空白或复制现有图片填充
             combined_img = self._grid_layout(valid_images, border_width, border_rgb, long_side_pixels)
+        elif combine_mode == "3x2 网格拼接":
+            # 执行 3x2 网格布局
+            combined_img = self._grid3x2_layout(valid_images, border_width, border_rgb, long_side_pixels)
         elif combine_mode == "3x3 网格拼接":
             # 执行3x3网格布局
             combined_img = self._grid3x3_layout(valid_images, border_width, border_rgb, long_side_pixels)
@@ -2084,6 +2090,112 @@ class NakuNodeAssetsCombine:
             # 标签区域的坐标
             cell_width = col1_width if i % 2 == 0 else col2_width
             cell_height = row1_height if i < 2 else row2_height
+
+            # 标签区域：在图片上方绘制边框色块
+            label_area = [pos_x, pos_y, pos_x + cell_width, pos_y + border_width]
+            draw.rectangle(label_area, fill=border_rgb)
+
+            # 添加标签文本，居左对齐
+            text_x = pos_x + 5  # 左边距 5 像素
+            text_y = pos_y + (border_width - font_size) // 2
+
+            # 使用更好的文本渲染方法
+            try:
+                draw.text((text_x, text_y), label, fill=text_rgb, font=font)
+            except UnicodeEncodeError:
+                # 如果遇到编码错误，尝试使用 ASCII 字符
+                safe_label = label.encode('utf-8', errors='ignore').decode('utf-8')
+                draw.text((text_x, text_y), safe_label, fill=text_rgb, font=font)
+
+            # 粘贴图片
+            canvas.paste(img, (pos_x, pos_y + border_width))
+
+        # 确保底部边框存在 - 在最下方添加一行边框
+        draw = ImageDraw.Draw(canvas)
+        bottom_border_area = [0, total_height - border_width, total_width, total_height]
+        draw.rectangle(bottom_border_area, fill=border_rgb)
+
+        return canvas
+
+
+    def _grid3x2_layout(self, valid_images, border_width, border_rgb, long_side_pixels):
+        """3x2 网格拼接布局 - 3 列 2 行，四周统一有边框"""
+        # 确保有 6 张图片
+        num_images = len(valid_images)
+        if num_images != 6:
+            raise ValueError("Opps，你输入的图片不是 6 张哦")
+
+        # 取前 6 张图片
+        filled_valid_images = valid_images[:6]
+
+        # 缩放所有图片，使每张图片的长边等于指定像素
+        resized_images = []
+        for (img, label) in filled_valid_images:
+            # 获取原始尺寸
+            orig_width, orig_height = img.size
+            # 计算缩放比例
+            if orig_width > orig_height:
+                # 宽大于高，以宽度为准
+                scale_factor = long_side_pixels / orig_width
+                new_width = long_side_pixels
+                new_height = int(orig_height * scale_factor)
+            else:
+                # 高大于等于宽，以高度为准
+                scale_factor = long_side_pixels / orig_height
+                new_height = long_side_pixels
+                new_width = int(orig_width * scale_factor)
+
+            # 缩放图片
+            resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            resized_images.append((resized_img, label))
+
+        # 计算网格布局尺寸
+        # 3 列 2 行 - 计算每列和每行的最大尺寸
+        col1_width = max(resized_images[i][0].size[0] for i in [0, 3])  # 第一列的最大宽度
+        col2_width = max(resized_images[i][0].size[0] for i in [1, 4])  # 第二列的最大宽度
+        col3_width = max(resized_images[i][0].size[0] for i in [2, 5])  # 第三列的最大宽度
+        row1_height = resized_images[0][0].size[1]  # 第一行的高度
+        row2_height = resized_images[3][0].size[1]  # 第二行的高度
+
+        # 计算最终画布尺寸
+        # 总宽度 = 左边框 + 第一列 + 中间边框 + 第二列 + 中间边框 + 第三列 + 右边框
+        total_width = border_width + col1_width + border_width + col2_width + border_width + col3_width + border_width
+        # 总高度 = 上边框 + 第一行 + 行间边框 + 第二行 + 下边框
+        total_height = border_width + row1_height + border_width + row2_height + border_width
+
+        # 创建画布 - 使用边框颜色
+        canvas = Image.new('RGB', (total_width, total_height), border_rgb)
+
+        font_size = max(12, border_width // 2)
+
+        # 加载支持中文的字体
+        font = self.get_system_font(font_size)
+
+        # 计算反色
+        text_rgb = tuple(255 - c for c in border_rgb)
+
+        # 定义位置：3 列 2 行，确保边框宽度一致
+        # 每个单元格的标签区域位于图片上方，高度为 border_width
+        positions = [
+            (border_width, border_width),  # 第 1 张 - 左上 [0]
+            (border_width + col1_width + border_width, border_width),  # 第 2 张 - 中上 [1]
+            (border_width + col1_width + border_width + col2_width + border_width, border_width),  # 第 3 张 - 右上 [2]
+            (border_width, border_width + row1_height + border_width),  # 第 4 张 - 左下 [3]
+            (border_width + col1_width + border_width, border_width + row1_height + border_width),  # 第 5 张 - 中下 [4]
+            (border_width + col1_width + border_width + col2_width + border_width, border_width + row1_height + border_width),  # 第 6 张 - 右下 [5]
+        ]
+
+        # 绘制每个单元格
+        for i in range(6):
+            img, label = resized_images[i]
+            pos_x, pos_y = positions[i]
+
+            # 绘制标签区域（整个单元格的顶部边框区域）
+            draw = ImageDraw.Draw(canvas)
+
+            # 标签区域的坐标
+            cell_width = col1_width if i % 3 == 0 else (col2_width if i % 3 == 1 else col3_width)
+            cell_height = row1_height if i < 3 else row2_height
 
             # 标签区域：在图片上方绘制边框色块
             label_area = [pos_x, pos_y, pos_x + cell_width, pos_y + border_width]
