@@ -5080,7 +5080,6 @@ class NakuNodeAPI_vidu_ref2video_third_party:
 NODE_CLASS_MAPPINGS = {
     # Google Nodes
     "NakuNodeAPI_Googel_Veo3": NakuNodeAPI_Googel_Veo3,
-    "NakuNodeAPI_nano_banana": NakuNodeAPI_nano_banana,
     "NakuNodeAPI_nano_banana_edit": NakuNodeAPI_nano_banana_edit,
     "NakuNodeAPI_nano_banana2_edit": NakuNodeAPI_nano_banana2_edit,
     "NakuNodeAPI_Gemini3_Image": NakuNodeAPI_Gemini3_Image,
@@ -5113,7 +5112,6 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     # Google Nodes
     "NakuNodeAPI_Googel_Veo3": "NakuNodeAPI Google Veo3",
-    "NakuNodeAPI_nano_banana": "NakuNodeAPI nano_banana",
     "NakuNodeAPI_nano_banana_edit": "NakuNodeAPI nano_banana_edit",
     "NakuNodeAPI_nano_banana2_edit": "NakuNodeAPI nano_banana2_edit",
     "NakuNodeAPI_Gemini3_Image": "NakuNodeAPI Gemini3 Image",
@@ -5249,7 +5247,6 @@ class NakuNodeAPI_api_set:
 NODE_CLASS_MAPPINGS = {
     # Google Nodes
     "NakuNodeAPI_Googel_Veo3": NakuNodeAPI_Googel_Veo3,
-    "NakuNodeAPI_nano_banana": NakuNodeAPI_nano_banana,
     "NakuNodeAPI_nano_banana_edit": NakuNodeAPI_nano_banana_edit,
     "NakuNodeAPI_nano_banana2_edit": NakuNodeAPI_nano_banana2_edit,
     "NakuNodeAPI_Gemini3_Image": NakuNodeAPI_Gemini3_Image,
@@ -5286,7 +5283,6 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     # Google Nodes
     "NakuNodeAPI_Googel_Veo3": "NakuNodeAPI Google Veo3",
-    "NakuNodeAPI_nano_banana": "NakuNodeAPI nano_banana",
     "NakuNodeAPI_nano_banana_edit": "NakuNodeAPI nano_banana_edit",
     "NakuNodeAPI_nano_banana2_edit": "NakuNodeAPI nano_banana2_edit",
     "NakuNodeAPI_Gemini3_Image": "NakuNodeAPI Gemini3 Image",
